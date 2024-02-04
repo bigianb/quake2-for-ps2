@@ -150,18 +150,18 @@ void VU1_UploadProg(int dest, void * start, void * end)
     {
         u32 current_count = (count > 256) ? 256 : count;
 
-        *((u64 *)chain)++ = VU1_DMA_REF_TAG((u32)start, current_count / 2);
-        *((u32 *)chain)++ = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0);
-        *((u32 *)chain)++ = VU1_VIF_CODE(VU1_VIF_MPG, current_count & 0xFF, dest);
+        *((u64 *)chain) = VU1_DMA_REF_TAG((u32)start, current_count / 2); chain += sizeof(u64);
+        *((u32 *)chain) = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0); chain += sizeof(u32);
+        *((u32 *)chain) = VU1_VIF_CODE(VU1_VIF_MPG, current_count & 0xFF, dest); chain += sizeof(u32);
 
         start += current_count * 2;
         count -= current_count;
         dest  += current_count;
     }
 
-    *((u64 *)chain)++ = VU1_DMA_END_TAG(0);
-    *((u32 *)chain)++ = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0);
-    *((u32 *)chain)++ = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0);
+    *((u64 *)chain) = VU1_DMA_END_TAG(0); chain += sizeof(u64);
+    *((u32 *)chain) = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0); chain += sizeof(u32);
+    *((u32 *)chain) = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0); chain += sizeof(u32);
 
     // Send it to VIF1:
     FlushCache(0);
@@ -197,16 +197,16 @@ VU1_End
 */
 void VU1_End(int start)
 {
-    *((u64 *)vu1_current_buffer)++ = VU1_DMA_END_TAG(0);
+    *((u64 *)vu1_current_buffer) = VU1_DMA_END_TAG(0); vu1_current_buffer += sizeof(u64);
 
     if (start >= 0)
     {
-        *((u32 *)vu1_current_buffer)++ = VU1_VIF_CODE(VU1_VIF_FLUSH, 0, 0);
-        *((u32 *)vu1_current_buffer)++ = VU1_VIF_CODE(VU1_VIF_MSCAL, 0, start);
+        *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_FLUSH, 0, 0); vu1_current_buffer += sizeof(u32);
+        *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_MSCAL, 0, start); vu1_current_buffer += sizeof(u32);
     }
     else
     {
-        *((u32 *)vu1_current_buffer)++ = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0);
+        *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0); vu1_current_buffer += sizeof(u32);
     }
 
     // Wait for previous transfer to complete if not yet:
@@ -233,9 +233,9 @@ void VU1_ListAddBegin(int address)
     vu1_local_context.is_buiding_dma = true;
 
     // These are placeholders filled later by VU1_ListAddEnd().
-    *((u64 *)vu1_current_buffer)++ = VU1_DMA_CNT_TAG(0);
-    *((u32 *)vu1_current_buffer)++ = VU1_VIF_CODE(VU1_VIF_STCYL, 0, 0x0101);
-    *((u32 *)vu1_current_buffer)++ = VU1_VIF_CODE(VU1_VIF_UNPACK_V4_32, 0, 0);
+    *((u64 *)vu1_current_buffer) = VU1_DMA_CNT_TAG(0); vu1_current_buffer += sizeof(u64);
+    *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_STCYL, 0, 0x0101); vu1_current_buffer += sizeof(u32);
+    *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_UNPACK_V4_32, 0, 0); vu1_current_buffer += sizeof(u32);
 }
 
 /*
@@ -253,14 +253,15 @@ void VU1_ListAddEnd(void)
     // Pad to qword alignment if necessary:
     while (vu1_local_context.dma_size & 0xF)
     {
-        *((u32 *)vu1_current_buffer)++ = 0;
+        *((u32 *)vu1_current_buffer) = 0; vu1_current_buffer += sizeof(u32);
         vu1_local_context.dma_size += sizeof(u32);
     }
 
     const int dma_size_qwords = vu1_local_context.dma_size >> 4;
-    *((u64 *)vu1_local_context.offset)++ = VU1_DMA_CNT_TAG(dma_size_qwords);
-    *((u32 *)vu1_local_context.offset)++ = VU1_VIF_CODE(VU1_VIF_STCYL, 0, 0x0101);
-    *((u32 *)vu1_local_context.offset)++ = VU1_VIF_CODE(VU1_VIF_UNPACK_V4_32, dma_size_qwords, vu1_local_context.cnt_dma_dest);
+    *((u64 *)vu1_local_context.offset) = VU1_DMA_CNT_TAG(dma_size_qwords); vu1_local_context.offset += sizeof(u64);
+    *((u32 *)vu1_local_context.offset) = VU1_VIF_CODE(VU1_VIF_STCYL, 0, 0x0101); vu1_local_context.offset += sizeof(u32);
+    *((u32 *)vu1_local_context.offset) = VU1_VIF_CODE(VU1_VIF_UNPACK_V4_32, dma_size_qwords, vu1_local_context.cnt_dma_dest);
+    vu1_local_context.offset += sizeof(u32);
 
     vu1_local_context.is_buiding_dma = false;
 }
@@ -277,9 +278,9 @@ void VU1_ListData(int dest_address, void * data, int quad_size)
         Sys_Error("VU1_ListData: Pointer is not 16-bytes aligned!");
     }
 
-    *((u64 *)vu1_current_buffer)++ = VU1_DMA_REF_TAG((u32)data, quad_size);
-    *((u32 *)vu1_current_buffer)++ = VU1_VIF_CODE(VU1_VIF_STCYL, 0, 0x0101);
-    *((u32 *)vu1_current_buffer)++ = VU1_VIF_CODE(VU1_VIF_UNPACK_V4_32, quad_size, dest_address);
+    *((u64 *)vu1_current_buffer) = VU1_DMA_REF_TAG((u32)data, quad_size); vu1_current_buffer += sizeof(u64);
+    *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_STCYL, 0, 0x0101); vu1_current_buffer += sizeof(u32);
+    *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_UNPACK_V4_32, quad_size, dest_address); vu1_current_buffer += sizeof(u32);
 }
 
 /*
@@ -294,8 +295,8 @@ void VU1_ListAdd128(u64 v1, u64 v2)
         Sys_Error("VU1_ListAdd128: Missing a DMA list begin!");
     }
 
-    *((u64 *)vu1_current_buffer)++ = v1;
-    *((u64 *)vu1_current_buffer)++ = v2;
+    *((u64 *)vu1_current_buffer) = v1; vu1_current_buffer += sizeof(u64);
+    *((u64 *)vu1_current_buffer) = v2; vu1_current_buffer += sizeof(u64);
     vu1_local_context.dma_size += sizeof(u64) * 2;
 }
 
@@ -313,8 +314,8 @@ u64 * VU1_ListAddGIFTag(void)
 
     // Empty tag that the caller can fill up.
     u64 * tag_ptr = (u64 *)vu1_current_buffer;
-    *((u64 *)vu1_current_buffer)++ = 0;
-    *((u64 *)vu1_current_buffer)++ = 0;
+    *((u64 *)vu1_current_buffer) = 0; vu1_current_buffer += sizeof(u64);
+    *((u64 *)vu1_current_buffer) = 0; vu1_current_buffer += sizeof(u64);
     vu1_local_context.dma_size += sizeof(u64) * 2;
     return tag_ptr;
 }
@@ -331,7 +332,7 @@ void VU1_ListAdd64(u64 v)
         Sys_Error("VU1_ListAdd64: Missing a DMA list begin!");
     }
 
-    *((u64 *)vu1_current_buffer)++ = v;
+    *((u64 *)vu1_current_buffer) = v; vu1_current_buffer += sizeof(u64);
     vu1_local_context.dma_size += sizeof(u64);
 }
 
@@ -347,7 +348,7 @@ void VU1_ListAdd32(u32 v)
         Sys_Error("VU1_ListAdd32: Missing a DMA list begin!");
     }
 
-    *((u32 *)vu1_current_buffer)++ = v;
+    *((u32 *)vu1_current_buffer) = v; vu1_current_buffer += sizeof(u32);
     vu1_local_context.dma_size += sizeof(u32);
 }
 
@@ -363,6 +364,6 @@ void VU1_ListAddFloat(float v)
         Sys_Error("VU1_ListAddFloat: Missing a DMA list begin!");
     }
 
-    *((float *)vu1_current_buffer)++ = v;
+    *((float *)vu1_current_buffer) = v; vu1_current_buffer += sizeof(float);
     vu1_local_context.dma_size += sizeof(float);
 }

@@ -189,7 +189,7 @@ void PS2_PacketAlloc(ps2_gs_packet_t * packet, int qwords, int type)
 			Sys_Error("Scratch Pad memory can only fit up to %d quadwords!", PS2_SPR_SIZE_QWORDS);
 		}
 
-        (u32 *)packet->data = (u32 *)PS2_SPR_MEM_BEGIN;
+        packet->data = (qword_t *)PS2_SPR_MEM_BEGIN;
         qwords = PS2_SPR_SIZE_QWORDS;
         byte_size = qwords << 4;
     }
@@ -201,7 +201,7 @@ void PS2_PacketAlloc(ps2_gs_packet_t * packet, int qwords, int type)
         // Optionally set the pointer attribute to UCAB space.
         if (type == GS_PACKET_UCAB)
         {
-            (u32) packet->data |= (u32)PS2_UCAB_MEM_MASK;
+            packet->data = (qword_t *)((u32)packet->data | PS2_UCAB_MEM_MASK);
         }
     }
 
@@ -226,7 +226,7 @@ void PS2_PacketFree(ps2_gs_packet_t * packet)
     {
         if (packet->type == GS_PACKET_UCAB)
         {
-            (u32)packet->data ^= (u32)PS2_UCAB_MEM_MASK;
+            packet->data = (qword_t *)((u32)packet->data ^ PS2_UCAB_MEM_MASK);
         }
 
         PS2_MemFree(packet->data, packet->qwords << 4, MEMTAG_RENDERER);
@@ -246,7 +246,7 @@ void PS2_PacketReset(ps2_gs_packet_t * packet)
 {
     if (packet->type == GS_PACKET_SPR)
     {
-        (u32 *)packet->data = (u32 *)PS2_SPR_MEM_BEGIN;
+        packet->data = (qword_t *)PS2_SPR_MEM_BEGIN;
         return;
     }
 

@@ -81,7 +81,7 @@ void Sys_Init(void)
     // but this is not strictly necessary. These
     // are lazily called by the PS2DEV SDK otherwise.
     SifInitRpc(0);
-    fioInit();
+    //fioInit();
 
     // Load the built-in IOP modules we need for the game.
     Sys_LoadIOPModules();
@@ -372,32 +372,32 @@ Remarks: Uses the fio PS2DEV SDK API.
 */
 qboolean Sys_LoadBinaryFile(const char * filename, int * size_bytes, void ** data_ptr)
 {
-    int fd;
+    FILE* fd;
     int file_len;
     int num_read;
     void * file_data   = NULL;
     qboolean had_error = false;
 
-    fd = fioOpen(filename, O_RDONLY);
+    fd = fopen(filename, "rb");
     if (fd < 0)
     {
         had_error = true;
         goto BAIL;
     }
 
-    file_len = fioLseek(fd, 0, SEEK_END);
+    file_len = fseek(fd, 0, SEEK_END);
     if (file_len <= 0)
     {
         had_error = true;
         goto BAIL;
     }
 
-    fioLseek(fd, 0, SEEK_SET); // rewind
+    fseek(fd, 0, SEEK_SET); // rewind
 
     // Alloc or fail with a Sys_Error.
     file_data = PS2_MemAlloc(file_len, MEMTAG_MISC);
 
-    num_read = fioRead(fd, file_data, file_len);
+    num_read = fread(file_data, 1, file_len, fd);
     if (num_read != file_len)
     {
         had_error = true;
@@ -408,7 +408,7 @@ BAIL:
 
     if (fd >= 0)
     {
-        fioClose(fd);
+        fclose(fd);
     }
 
     if (had_error)

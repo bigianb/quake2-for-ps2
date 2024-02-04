@@ -190,7 +190,7 @@ PS2_INCS        = -I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include -I$(SRC_DIR)
 #
 # Custom GCC for the PS2 EE CPU (based on GCC v3):
 #
-PS2_CC = ee-gcc
+PS2_CC = mips64r5900el-ps2-elf-gcc
 
 #
 # Vector Unit assembler:
@@ -228,9 +228,12 @@ MKDIR_CMD = mkdir -p
 ifndef VERBOSE
   QUIET = @
   # Colored text if the terminal supports ANSI color codes:
-  COLOR_ALT1    = "\033[36;1m"
-  COLOR_ALT2    = "\033[35;1m"
-  COLOR_DEFAULT = "\033[0;1m"
+  #COLOR_ALT1    = "\033[36;1m"
+  #COLOR_ALT2    = "\033[35;1m"
+  #COLOR_DEFAULT = "\033[0;1m"
+  COLOR_ALT1    = ""
+  COLOR_ALT2    = ""
+  COLOR_DEFAULT = ""
   ifdef QUIET_W_CFLAGS
     ECHO_COMPILING = @echo $(COLOR_ALT1)"-> Compiling "$(PS2_CFLAGS) $(COLOR_ALT2)$<$(COLOR_ALT1)" ..."$(COLOR_DEFAULT)
   else # !QUIET_W_CFLAGS

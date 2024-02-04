@@ -68,13 +68,13 @@ m_vec4_t * Vec4_Negate3(m_vec4_t * result, const m_vec4_t * v)
 m_vec4_t * Vec4_Divide3(m_vec4_t * result, const m_vec4_t * v, float s)
 {
     asm volatile (
-        "lqc2      vf4, 0x0(%1)    \n\t"
-        "mfc1      $8,  %2         \n\t"
-        "qmtc2     $8,  vf5        \n\t"
-        "vdiv      Q,   vf0w, vf5x \n\t"
-        "vwaitq                    \n\t"
-        "vmulq.xyz vf4, vf4,  Q    \n\t"
-        "sqc2      vf4, 0x0(%0)    \n\t"
+        "lqc2      $vf4, 0x0(%1)      \n\t"
+        "mfc1      $8,  %2            \n\t"
+        "qmtc2     $8,  $vf5          \n\t"
+        "vdiv      $Q,   $vf0w, $vf5x \n\t"
+        "vwaitq                       \n\t"
+        "vmulq.xyz $vf4, $vf4,  $Q    \n\t"
+        "sqc2      $vf4, 0x0(%0)      \n\t"
         : : "r" (result), "r" (v), "f" (s)
         : "$8"
     );
@@ -84,11 +84,11 @@ m_vec4_t * Vec4_Divide3(m_vec4_t * result, const m_vec4_t * v, float s)
 m_vec4_t * Vec4_Multiply3(m_vec4_t * result, const m_vec4_t * v, float s)
 {
     asm volatile (
-        "lqc2      vf4, 0x0(%1)  \n\t"
-        "mfc1      $8,  %2       \n\t"
-        "qmtc2     $8,  vf5      \n\t"
-        "vmulx.xyz vf4, vf4, vf5 \n\t"
-        "sqc2      vf4, 0x0(%0)  \n\t"
+        "lqc2      $vf4, 0x0(%1)    \n\t"
+        "mfc1      $8,  %2          \n\t"
+        "qmtc2     $8,  $vf5        \n\t"
+        "vmulx.xyz $vf4, $vf4, $vf5 \n\t"
+        "sqc2      $vf4, 0x0(%0)    \n\t"
         : : "r" (result), "r" (v), "f" (s)
         : "$8"
     );
@@ -98,10 +98,10 @@ m_vec4_t * Vec4_Multiply3(m_vec4_t * result, const m_vec4_t * v, float s)
 m_vec4_t * Vec4_Add3(m_vec4_t * result, const m_vec4_t * a, const m_vec4_t * b)
 {
     asm volatile (
-        "lqc2      vf4, 0x0(%1)  \n\t"
-        "lqc2      vf5, 0x0(%2)  \n\t"
-        "vadd.xyz  vf6, vf4, vf5 \n\t"
-        "sqc2      vf6, 0x0(%0)  \n\t"
+        "lqc2      $vf4, 0x0(%1)    \n\t"
+        "lqc2      $vf5, 0x0(%2)    \n\t"
+        "vadd.xyz  $vf6, $vf4, $vf5 \n\t"
+        "sqc2      $vf6, 0x0(%0)    \n\t"
         : : "r" (result), "r" (a), "r" (b)
     );
     return result;
@@ -110,10 +110,10 @@ m_vec4_t * Vec4_Add3(m_vec4_t * result, const m_vec4_t * a, const m_vec4_t * b)
 m_vec4_t * Vec4_Sub3(m_vec4_t * result, const m_vec4_t * a, const m_vec4_t * b)
 {
     asm volatile (
-        "lqc2      vf4, 0x0(%1)  \n\t"
-        "lqc2      vf5, 0x0(%2)  \n\t"
-        "vsub.xyz  vf6, vf4, vf5 \n\t"
-        "sqc2      vf6, 0x0(%0)  \n\t"
+        "lqc2      $vf4, 0x0(%1)    \n\t"
+        "lqc2      $vf5, 0x0(%2)    \n\t"
+        "vsub.xyz  $vf6, $vf4, $vf5 \n\t"
+        "sqc2      $vf6, 0x0(%0)    \n\t"
         : : "r" (result), "r" (a), "r" (b)
     );
     return result;
@@ -140,14 +140,14 @@ float Vec4_Dist3Sqr(const m_vec4_t * a, const m_vec4_t * b)
 {
     register float dist;
     asm volatile (
-        "lqc2     vf4, 0x0(%1)  \n\t" // vf4 = a
-        "lqc2     vf5, 0x0(%2)  \n\t" // vf5 = b
-        "vsub.xyz vf6, vf4, vf5 \n\t" // vf6 = vf4(a) - vf5(b)
-        "vmul.xyz vf7, vf6, vf6 \n\t" // vf7 = vf6 * vf6
-        "vaddy.x  vf7, vf7, vf7 \n\t" // dot(vf7, vf7)
-        "vaddz.x  vf7, vf7, vf7 \n\t"
-        "qmfc2    $2,  vf7      \n\t" // Store result on 'dist'
-        "mtc1     $2,  %0       \n\t"
+        "lqc2     $vf4, 0x0(%1)    \n\t" // vf4 = a
+        "lqc2     $vf5, 0x0(%2)    \n\t" // vf5 = b
+        "vsub.xyz $vf6, $vf4, $vf5 \n\t" // vf6 = vf4(a) - vf5(b)
+        "vmul.xyz $vf7, $vf6, $vf6 \n\t" // vf7 = vf6 * vf6
+        "vaddy.x  $vf7, $vf7, $vf7 \n\t" // dot(vf7, vf7)
+        "vaddz.x  $vf7, $vf7, $vf7 \n\t"
+        "qmfc2    $2,  $vf7        \n\t" // Store result on 'dist'
+        "mtc1     $2,  %0          \n\t"
         : "=f" (dist)
         : "r" (a), "r" (b)
         : "$2"
@@ -159,13 +159,13 @@ float Vec4_Dot3(const m_vec4_t * a, const m_vec4_t * b)
 {
     register float result;
     asm volatile (
-        "lqc2     vf4, 0x0(%1)  \n\t"
-        "lqc2     vf5, 0x0(%2)  \n\t"
-        "vmul.xyz vf5, vf4, vf5 \n\t"
-        "vaddy.x  vf5, vf5, vf5 \n\t"
-        "vaddz.x  vf5, vf5, vf5 \n\t"
-        "qmfc2    $2,  vf5      \n\t"
-        "mtc1     $2,  %0       \n\t"
+        "lqc2     $vf4, 0x0(%1)    \n\t"
+        "lqc2     $vf5, 0x0(%2)    \n\t"
+        "vmul.xyz $vf5, $vf4, $vf5 \n\t"
+        "vaddy.x  $vf5, $vf5, $vf5 \n\t"
+        "vaddz.x  $vf5, $vf5, $vf5 \n\t"
+        "qmfc2    $2,  $vf5        \n\t"
+        "mtc1     $2,  %0          \n\t"
         : "=f" (result)
         : "r" (a), "r" (b)
         : "$2"
@@ -215,14 +215,14 @@ m_vec4_t * Vec4_Max3PerElement(m_vec4_t * result, const m_vec4_t * a, const m_ve
 m_vec4_t * Vec4_Lerp3(m_vec4_t * result, const m_vec4_t * a, const m_vec4_t * b, float t)
 {
     asm volatile (
-        "lqc2      vf4, 0x0(%1)  \n\t" // vf4 = a
-        "lqc2      vf5, 0x0(%2)  \n\t" // vf5 = b
-        "mfc1      $8,  %3       \n\t" // vf6 = t
-        "qmtc2     $8,  vf6      \n\t" // lerp:
-        "vsub.xyz  vf7, vf5, vf4 \n\t" // vf7 = v2 - v1
-        "vmulx.xyz vf8, vf7, vf6 \n\t" // vf8 = vf7 * t
-        "vadd.xyz  vf9, vf8, vf4 \n\t" // vf9 = vf8 + vf4
-        "sqc2      vf9, 0x0(%0)  \n\t" // result = vf9
+        "lqc2      $vf4, 0x0(%1)    \n\t" // vf4 = a
+        "lqc2      $vf5, 0x0(%2)    \n\t" // vf5 = b
+        "mfc1      $8,  %3          \n\t" // vf6 = t
+        "qmtc2     $8,  $vf6        \n\t" // lerp:
+        "vsub.xyz  $vf7, $vf5, $vf4 \n\t" // vf7 = v2 - v1
+        "vmulx.xyz $vf8, $vf7, $vf6 \n\t" // vf8 = vf7 * t
+        "vadd.xyz  $vf9, $vf8, $vf4 \n\t" // vf9 = vf8 + vf4
+        "sqc2      $vf9, 0x0(%0)    \n\t" // result = vf9
         : : "r" (result), "r" (a), "r" (b), "f" (t)
         : "$8"
     );
@@ -232,17 +232,17 @@ m_vec4_t * Vec4_Lerp3(m_vec4_t * result, const m_vec4_t * a, const m_vec4_t * b,
 m_vec4_t * Vec4_LerpScale3(m_vec4_t * result, const m_vec4_t * a, const m_vec4_t * b, float t, float s)
 {
     asm volatile (
-        "mfc1      $8,  %3       \n\t"
-        "mfc1      $9,  %4       \n\t"
-        "lqc2      vf4, 0x0(%1)  \n\t" // vf4 = a
-        "lqc2      vf5, 0x0(%2)  \n\t" // vf5 = b
-        "qmtc2     $8,  vf6      \n\t" // vf6 = t
-        "qmtc2     $9,  vf7      \n\t" // vf7 = s
-        "vsub.xyz  vf8, vf5, vf4 \n\t" // vf8 = v2 - v1
-        "vmulx.xyz vf8, vf8, vf6 \n\t" // vf8 = vf8 * t
-        "vadd.xyz  vf9, vf8, vf4 \n\t" // vf9 = vf8 + vf4
-        "vmulx.xyz vf9, vf9, vf7 \n\t" // vf9 = vf9 * s
-        "sqc2      vf9, 0x0(%0)  \n\t" // result = vf9
+        "mfc1      $8,  %3          \n\t"
+        "mfc1      $9,  %4          \n\t"
+        "lqc2      $vf4, 0x0(%1)    \n\t" // vf4 = a
+        "lqc2      $vf5, 0x0(%2)    \n\t" // vf5 = b
+        "qmtc2     $8,  $vf6        \n\t" // vf6 = t
+        "qmtc2     $9,  $vf7        \n\t" // vf7 = s
+        "vsub.xyz  $vf8, $vf5, $vf4 \n\t" // vf8 = v2 - v1
+        "vmulx.xyz $vf8, $vf8, $vf6 \n\t" // vf8 = vf8 * t
+        "vadd.xyz  $vf9, $vf8, $vf4 \n\t" // vf9 = vf8 + vf4
+        "vmulx.xyz $vf9, $vf9, $vf7 \n\t" // vf9 = vf9 * s
+        "sqc2      $vf9, 0x0(%0)    \n\t" // result = vf9
         : : "r" (result), "r" (a), "r" (b), "f" (t), "f" (s)
         : "$8", "$9"
     );
@@ -288,15 +288,15 @@ m_mat4_t * Mat4_Copy(m_mat4_t * dest, const m_mat4_t * src)
 m_mat4_t * Mat4_Identity(m_mat4_t * m)
 {
     asm volatile (
-        "vsub.xyzw  vf4, vf0, vf0 \n\t"
-        "vadd.w     vf4, vf4, vf0 \n\t"
-        "vmr32.xyzw vf5, vf4      \n\t"
-        "vmr32.xyzw vf6, vf5      \n\t"
-        "vmr32.xyzw vf7, vf6      \n\t"
-        "sqc2       vf4, 0x30(%0) \n\t"
-        "sqc2       vf5, 0x20(%0) \n\t"
-        "sqc2       vf6, 0x10(%0) \n\t"
-        "sqc2       vf7, 0x0(%0)  \n\t"
+        "vsub.xyzw  $vf4, $vf0, $vf0 \n\t"
+        "vadd.w     $vf4, $vf4, $vf0 \n\t"
+        "vmr32.xyzw $vf5, $vf4       \n\t"
+        "vmr32.xyzw $vf6, $vf5       \n\t"
+        "vmr32.xyzw $vf7, $vf6       \n\t"
+        "sqc2       $vf4, 0x30(%0)   \n\t"
+        "sqc2       $vf5, 0x20(%0)   \n\t"
+        "sqc2       $vf6, 0x10(%0)   \n\t"
+        "sqc2       $vf7, 0x0(%0)    \n\t"
         : : "r" (m)
     );
     return m;
@@ -332,34 +332,34 @@ m_mat4_t * Mat4_Scale(m_mat4_t * m, float s)
 m_mat4_t * Mat4_Multiply(m_mat4_t * result, const m_mat4_t * a, const m_mat4_t * b)
 {
     asm volatile (
-        "lqc2         vf1, 0x00(%1) \n\t"
-        "lqc2         vf2, 0x10(%1) \n\t"
-        "lqc2         vf3, 0x20(%1) \n\t"
-        "lqc2         vf4, 0x30(%1) \n\t"
-        "lqc2         vf5, 0x00(%2) \n\t"
-        "lqc2         vf6, 0x10(%2) \n\t"
-        "lqc2         vf7, 0x20(%2) \n\t"
-        "lqc2         vf8, 0x30(%2) \n\t"
-        "vmulax.xyzw  ACC, vf5, vf1 \n\t"
-        "vmadday.xyzw ACC, vf6, vf1 \n\t"
-        "vmaddaz.xyzw ACC, vf7, vf1 \n\t"
-        "vmaddw.xyzw  vf1, vf8, vf1 \n\t"
-        "vmulax.xyzw  ACC, vf5, vf2 \n\t"
-        "vmadday.xyzw ACC, vf6, vf2 \n\t"
-        "vmaddaz.xyzw ACC, vf7, vf2 \n\t"
-        "vmaddw.xyzw  vf2, vf8, vf2 \n\t"
-        "vmulax.xyzw  ACC, vf5, vf3 \n\t"
-        "vmadday.xyzw ACC, vf6, vf3 \n\t"
-        "vmaddaz.xyzw ACC, vf7, vf3 \n\t"
-        "vmaddw.xyzw  vf3, vf8, vf3 \n\t"
-        "vmulax.xyzw  ACC, vf5, vf4 \n\t"
-        "vmadday.xyzw ACC, vf6, vf4 \n\t"
-        "vmaddaz.xyzw ACC, vf7, vf4 \n\t"
-        "vmaddw.xyzw  vf4, vf8, vf4 \n\t"
-        "sqc2         vf1, 0x00(%0) \n\t"
-        "sqc2         vf2, 0x10(%0) \n\t"
-        "sqc2         vf3, 0x20(%0) \n\t"
-        "sqc2         vf4, 0x30(%0) \n\t"
+        "lqc2         $vf1, 0x00(%1) \n\t"
+        "lqc2         $vf2, 0x10(%1) \n\t"
+        "lqc2         $vf3, 0x20(%1) \n\t"
+        "lqc2         $vf4, 0x30(%1) \n\t"
+        "lqc2         $vf5, 0x00(%2) \n\t"
+        "lqc2         $vf6, 0x10(%2) \n\t"
+        "lqc2         $vf7, 0x20(%2) \n\t"
+        "lqc2         $vf8, 0x30(%2) \n\t"
+        "vmulax.xyzw  $ACC, $vf5, $vf1 \n\t"
+        "vmadday.xyzw $ACC, $vf6, $vf1 \n\t"
+        "vmaddaz.xyzw $ACC, $vf7, $vf1 \n\t"
+        "vmaddw.xyzw  $vf1, $vf8, $vf1  \n\t"
+        "vmulax.xyzw  $ACC, $vf5, $vf2 \n\t"
+        "vmadday.xyzw $ACC, $vf6, $vf2 \n\t"
+        "vmaddaz.xyzw $ACC, $vf7, $vf2 \n\t"
+        "vmaddw.xyzw  $vf2, $vf8, $vf2  \n\t"
+        "vmulax.xyzw  $ACC, $vf5, $vf3 \n\t"
+        "vmadday.xyzw $ACC, $vf6, $vf3 \n\t"
+        "vmaddaz.xyzw $ACC, $vf7, $vf3 \n\t"
+        "vmaddw.xyzw  $vf3, $vf8, $vf3  \n\t"
+        "vmulax.xyzw  $ACC, $vf5, $vf4 \n\t"
+        "vmadday.xyzw $ACC, $vf6, $vf4 \n\t"
+        "vmaddaz.xyzw $ACC, $vf7, $vf4 \n\t"
+        "vmaddw.xyzw  $vf4, $vf8, $vf4 \n\t"
+        "sqc2         $vf1, 0x00(%0) \n\t"
+        "sqc2         $vf2, 0x10(%0) \n\t"
+        "sqc2         $vf3, 0x20(%0) \n\t"
+        "sqc2         $vf4, 0x30(%0) \n\t"
         : : "r" (result), "r" (a), "r" (b)
     );
     return result;
@@ -369,16 +369,16 @@ m_vec4_t * Mat4_TransformVec4(m_vec4_t * result, const m_mat4_t * m, const m_vec
 {
     // v->w is also multiplied, so be sure to set it to 1 or whatever meaningful value!
     asm volatile (
-        "lqc2         vf4, 0x0(%1)  \n\t"
-        "lqc2         vf5, 0x10(%1) \n\t"
-        "lqc2         vf6, 0x20(%1) \n\t"
-        "lqc2         vf7, 0x30(%1) \n\t"
-        "lqc2         vf8, 0x0(%2)  \n\t"
-        "vmulax.xyzw  ACC, vf4, vf8 \n\t"
-        "vmadday.xyzw ACC, vf5, vf8 \n\t"
-        "vmaddaz.xyzw ACC, vf6, vf8 \n\t"
-        "vmaddw.xyzw  vf9, vf7, vf8 \n\t"
-        "sqc2         vf9, 0x0(%0)  \n\t"
+        "lqc2         $vf4, 0x0(%1)  \n\t"
+        "lqc2         $vf5, 0x10(%1) \n\t"
+        "lqc2         $vf6, 0x20(%1) \n\t"
+        "lqc2         $vf7, 0x30(%1) \n\t"
+        "lqc2         $vf8, 0x0(%2)  \n\t"
+        "vmulax.xyzw  $ACC, $vf4, $vf8 \n\t"
+        "vmadday.xyzw $ACC, $vf5, $vf8 \n\t"
+        "vmaddaz.xyzw $ACC, $vf6, $vf8 \n\t"
+        "vmaddw.xyzw  $vf9, $vf7, $vf8 \n\t"
+        "sqc2         $vf9, 0x0(%0)  \n\t"
         : : "r" (result), "r" (m), "r" (v)
     );
     return result;
