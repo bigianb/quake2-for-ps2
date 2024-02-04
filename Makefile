@@ -141,12 +141,12 @@ VCL_FILES = color_triangles_clip_tris.vcl
 #  Libs from the PS2DEV SDK:
 # ---------------------------------------------------------
 
-PS2_LIBS =    \
+EE_LIBS =    \
 	-ldma     \
 	-lgraph   \
 	-ldraw    \
 	-lpatches \
-	-lmf      \
+	-lm      \
 	-lc       \
 	-lkernel
 
@@ -184,8 +184,11 @@ VU_PROGS = $(addprefix $(OUTPUT_DIR)/$(VU_OUTPUT_DIR)/, $(patsubst %.vcl, %.o, $
 # Global #defines, C-flags and include paths:
 #
 PS2_GLOBAL_DEFS = -D_EE -DGAME_HARD_LINKED -DPS2_QUAKE
-PS2_CFLAGS      = $(PS2_GLOBAL_DEFS) -O3 -G0 -Wformat=2
+PS2_CFLAGS      = $(PS2_GLOBAL_DEFS) -O0 -G0 -Wformat=2
 PS2_INCS        = -I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include -I$(SRC_DIR)
+
+# Linker flags
+EE_LDFLAGS := -L$(PS2SDK)/ee/lib $(EE_LDFLAGS)
 
 #
 # Custom GCC for the PS2 EE CPU (based on GCC v3):
@@ -204,15 +207,8 @@ PS2_VU_DVP = dvp-as
 # vclpp = Simple preprocessor I wrote to help, since VCL doesn't handle #defines and macros.
 # (get it at: https://github.com/glampert/vclpp)
 #
-PS2_VCL   = openvcl
-PS2_VCLPP = vclpp
-
-#
-# Linker stuff:
-#
-PS2_LDFLAGS = -L$(PS2SDK)/ee/lib
-PS2_LINKCMD = -mno-crt0 -T$(PS2SDK)/ee/startup/linkfile
-PS2_STARTUP_FILE = $(PS2SDK)/ee/startup/crt0.o
+PS2_VCL   = /Users/ian/dev/openvcl/openvcl
+PS2_VCLPP = /Users/ian/dev/vclpp/vclpp
 
 #
 # The same structure of src/ is recreated in build/, so we need mkdir.
@@ -250,16 +246,14 @@ endif # VERBOSE
 # ---------------------------------------------------------
 
 all: $(BIN_TARGET)
-	$(QUIET) ee-strip --strip-all $(BIN_TARGET)
+#	$(QUIET) ee-strip --strip-all $(BIN_TARGET)
 
 #
 # C source files => OBJ files:
 #
 $(BIN_TARGET): $(OBJ_FILES) $(IOP_MODULES) $(VU_PROGS)
 	$(ECHO_LINKING)
-	$(QUIET) $(PS2_CC) $(PS2_LINKCMD) $(PS2_CFLAGS) -o \
-		$(BIN_TARGET) $(PS2_STARTUP_FILE) $(OBJ_FILES) \
-		$(VU_PROGS) $(IOP_MODULES) $(PS2_LDFLAGS) $(PS2_LIBS)
+	$(PS2_CC) -T$(PS2SDK)/ee/startup/linkfile -o $(BIN_TARGET) $(OBJ_FILES) $(VU_PROGS) $(IOP_MODULES) $(EE_LDFLAGS) $(EE_LIBS)
 
 $(OBJ_FILES): $(OUTPUT_DIR)/%.o: %.c
 	$(ECHO_COMPILING)
