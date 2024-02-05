@@ -42,6 +42,8 @@ apk update
 apk add make mpc mpfr gmp mpc1 mpfr4 cdrkit
 ```
 
+You will need to copy the baseq2 directory from a real Q2 game or the demo into the fs directory.
+Running make in the root directory should generate an ISO file in the build directory.
 
 ## License
 

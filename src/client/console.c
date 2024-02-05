@@ -365,8 +365,6 @@ void Con_Print(char * txt)
     int mask;
     static int cr;
 
-    printf(txt);
-
     if (!con.initialized)
     {
         return;

@@ -45,6 +45,7 @@ void CL_Frame(int msec)
 
 void Con_Print(char * text)
 {
+    puts(text);
 }
 
 void Cmd_ForwardToServer(void)
