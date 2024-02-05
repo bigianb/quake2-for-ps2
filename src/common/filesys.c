@@ -519,22 +519,24 @@ pack_t * FS_LoadPackFile(char * packfile)
     *pDest++ = 'm';
     *pDest++ = '0';
     *pDest++ = ':';
-    *pDest++ = '/';
+    *pDest++ = '\\';
     while (*s) {
-        *pDest++ = toupper((unsigned char) *s);
+        if (*s == '/'){
+            *pDest++ = '\\';
+        } else {
+            *pDest++ = toupper((unsigned char) *s);
+        }
         s++;
     }
     *pDest++ = ';';
     *pDest++ = '1';
 
-    printf("try to load %s\n", ucName);
     packhandle = fopen(ucName, "rb");
     if (!packhandle)
     {
-        printf("failed to load %s\n", ucName);
         return NULL;
     }
-    printf("opened %s, handle %d\n", ucName, (unsigned int)packhandle);
+    printf("opened %s, handle %d\n", packfile, (unsigned int)packhandle);
     fread(&header, 1, sizeof(header), packhandle);
     if (LittleLong(header.ident) != IDPAKHEADER)
     {
@@ -574,7 +576,7 @@ pack_t * FS_LoadPackFile(char * packfile)
     }
 
     pack = Z_Malloc(sizeof(pack_t));
-    strcpy(pack->filename, packfile);
+    strcpy(pack->filename, ucName);
     pack->handle = packhandle;
     pack->numfiles = numpackfiles;
     pack->files = newfiles;
