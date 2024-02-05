@@ -1,10 +1,6 @@
 
 # Quake II port for the PlayStation 2
 
-**NOTE: This project is no longer active and there are no plans to continue development.**
-
-![Raw level geometry](https://raw.githubusercontent.com/glampert/quake2-for-ps2/master/misc/screens/q2ps2-level-notex-2.png "Raw level geometry")
-
 ## Overview
 
 This is an unofficial fan made port, targeting the PS2 Console, of the original
@@ -32,6 +28,21 @@ Some of the main features still missing are:
 - Optimize memory allocation/usage as much as possible
 - Optimize rendering to ensure smooth 30fps gameplay
 
+## Dev environment
+
+I use the ps2dev docker on M1 macbook. This is the amd64 image running under rosetta. I always forget the command to start the container ... use the following (assuming source code is in /Users/ian/dev ... change as you see fit)
+
+```
+docker run --volume=/Users/ian/dev:/home/src --workdir=/home/src -t -d ps2dev/ps2dev:latest
+```
+
+we then need to add some things to the image:
+```
+apk update
+apk add make mpc mpfr gmp mpc1 mpfr4 cdrkit
+```
+
+
 ## License
 
 Quake II was originally released as GPL, and it remains as such. New code written
@@ -43,4 +54,5 @@ You can also find a copy of the GPL version 2 [in here][link_gpl_v2].
 [link_id_repo]: https://github.com/id-Software/Quake-2
 [link_ps2_dev]: https://github.com/ps2dev
 [link_gpl_v2]:  https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+
 

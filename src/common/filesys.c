@@ -506,8 +506,6 @@ void makeCDROMPath(char* pDest, const char* pSrc)
         }
         s++;
     }
-    *pDest++ = ';';
-    *pDest++ = '1';
 }
 
 /*
@@ -534,6 +532,8 @@ pack_t * FS_LoadPackFile(char * packfile)
     // Convert to upper case
     char ucName[256];
     makeCDROMPath(ucName, packfile);
+
+    printf("open %s as %s\n", packfile, ucName);
 
     packhandle = fopen(ucName, "rb");
     if (!packhandle)

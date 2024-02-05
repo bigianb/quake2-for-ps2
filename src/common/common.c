@@ -1529,6 +1529,7 @@ void Qcommon_Frame(int msec)
 
     if (setjmp(abortframe))
     {
+        printf("an ERR_DROP was thown\n");
         return; // an ERR_DROP was thrown
     }
 /*

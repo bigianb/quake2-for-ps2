@@ -1794,12 +1794,6 @@ void CL_Frame(int msec)
     // predict all unacknowledged movements
     CL_PredictMovement();
 
-    // LAMPERT:
-    // We don't use a separate DLL on QPS2, so this is useless.
-    //
-    // allow rendering DLL change
-    //VID_CheckChanges();
-
     if (!cl.refresh_prepped && cls.state == ca_active)
     {
         CL_PrepRefresh();

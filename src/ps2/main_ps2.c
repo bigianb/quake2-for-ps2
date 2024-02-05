@@ -17,22 +17,6 @@ static char * ps2_argv[] = { "QPS2.ELF", NULL };
 
 /*
 ================
-Test programs:
-================
-*/
-extern void Test_PS2_Draw2D(void);      // ps2_prog = 1
-extern void Test_PS2_Cinematics(void);  // ps2_prog = 2
-extern void Test_PS2_QuakeMenus(void);  // ps2_prog = 3
-extern void Test_PS2_VU1Triangle(void); // ps2_prog = 4
-extern void Test_PS2_VU1Cubes(void);    // ps2_prog = 5
-
-// Default value for ps2_prog CVar:
-#ifndef DEFAULT_PS2_PROG
-    #define DEFAULT_PS2_PROG "0"
-#endif // DEFAULT_PS2_PROG
-
-/*
-================
 PS2 main():
 ================
 */
@@ -44,53 +28,23 @@ int main(void)
     // fake a default program name argv[].
     Qcommon_Init(1, ps2_argv);
 
-    // Which "program" to run. 0 is game, following numbers are the tests.
-    cvar_t * ps2_prog = Cvar_Get("ps2_prog", DEFAULT_PS2_PROG, 0);
+    int time    = 0;
+    int newtime = 0;
+    int oldtime = Sys_Milliseconds();
 
-    // Run Quake 2 normally:
-    if ((int)ps2_prog->value == 0)
+    for (;;)
     {
-        int time    = 0;
-        int newtime = 0;
-        int oldtime = Sys_Milliseconds();
-
-        for (;;)
+        do
         {
-            do
-            {
-                newtime = Sys_Milliseconds();
-                time = newtime - oldtime;
+            newtime = Sys_Milliseconds();
+            time = newtime - oldtime;
 
-                time = 10;   // hack
-            } while (time < 1);
+            time = 10;   // hack
+        } while (time < 1);
 
-            Qcommon_Frame(time);
-            oldtime = newtime;
-        }
+        Qcommon_Frame(time);
+        oldtime = newtime;
     }
-    else // Run a test instead:
-    {
-        switch ((int)ps2_prog->value)
-        {
-        case 1 :
-            Test_PS2_Draw2D();
-            break;
-        case 2 :
-            Test_PS2_Cinematics();
-            break;
-        case 3 :
-            Test_PS2_QuakeMenus();
-            break;
-        case 4 :
-            Test_PS2_VU1Triangle();
-            break;
-        case 5 :
-            Test_PS2_VU1Cubes();
-            break;
-        default :
-            break;
-        } // switch (ps2_prog)
-    }
-
+    
     Sys_Quit();
 }

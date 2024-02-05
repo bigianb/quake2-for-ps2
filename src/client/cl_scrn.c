@@ -1275,8 +1275,6 @@ void SCR_UpdateScreen(void)
 
     printf("SCR_UpdateScreen\n");
 
-    return; // BAIL
-
     // if the screen is disabled (loading plaque is up, or vid mode changing)
     // do nothing at all
     if (cls.disable_screen)
@@ -1326,6 +1324,7 @@ void SCR_UpdateScreen(void)
 
         if (scr_draw_loading == 2)
         {
+            printf("    draw loading\n");
             // loading plaque over black screen
             int w, h;
             re.CinematicSetPalette(NULL);
@@ -1335,6 +1334,7 @@ void SCR_UpdateScreen(void)
         }
         else if (cl.cinematictime > 0)
         {
+            printf("    draw cinematic\n");
             // if a cinematic is supposed to be running,
             // handle menus and console specially
             if (cls.key_dest == key_menu)
@@ -1362,6 +1362,7 @@ void SCR_UpdateScreen(void)
         }
         else
         {
+            printf("    draw 3d\n");
             // make sure the game palette is active
             if (cl.cinematicpalette_active)
             {
