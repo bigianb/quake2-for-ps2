@@ -1005,9 +1005,10 @@ CL_ReadPackets
 */
 void CL_ReadPackets(void)
 {
+    printf("CL_ReadPackets\n");
     while (NET_GetPacket(NS_CLIENT, &net_from, &net_message))
     {
-        //  Com_Printf ("packet\n");
+        Com_DPrintf ("packet\n");
         //
         // remote command packet
         //
@@ -1730,8 +1731,10 @@ CL_Frame
 */
 void CL_Frame(int msec)
 {
-    static int extratime;
+    static int extratime = 0;
     static int lasttimecalled;
+
+    printf("CL_Frame(%d)\n", msec);
 
     if (dedicated->value)
     {
@@ -1744,10 +1747,12 @@ void CL_Frame(int msec)
     {
         if (cls.state == ca_connected && extratime < 100)
         {
+            printf("     flood protection, extratime = %d\n", extratime);
             return; // don't flood packets out while connecting
         }
         if (extratime < 1000 / cl_maxfps->value)
         {
+            printf("     framerate limiter, extratime = %d\n", extratime);
             return; // framerate is too high
         }
     }
@@ -1807,6 +1812,8 @@ void CL_Frame(int msec)
     }
 
     SCR_UpdateScreen();
+
+    printf("Screen updated\n");
 
     if (host_speeds->value)
     {

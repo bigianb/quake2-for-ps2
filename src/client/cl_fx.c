@@ -211,6 +211,8 @@ void CL_RunDLights(void)
     int i;
     cdlight_t * dl;
 
+    printf("CL_RunDLights\n");
+
     dl = cl_dlights;
     for (i = 0; i < MAX_DLIGHTS; i++, dl++)
     {

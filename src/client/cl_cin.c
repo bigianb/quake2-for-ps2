@@ -520,6 +520,8 @@ void SCR_RunCinematic(void)
 {
     int frame;
 
+    printf("SCR_RunCinematic\n");
+
     if (cl.cinematictime <= 0)
     {
         SCR_StopCinematic();

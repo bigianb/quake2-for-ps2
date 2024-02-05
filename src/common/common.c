@@ -1525,11 +1525,13 @@ void Qcommon_Frame(int msec)
     const char * s;
     int time_before = 0, time_between = 0, time_after = 0;
 
+    printf("Qcommon_Frame(%d)\n", msec);
+
     if (setjmp(abortframe))
     {
         return; // an ERR_DROP was thrown
     }
-
+/*
     if (log_stats->modified)
     {
         log_stats->modified = false;
@@ -1555,7 +1557,7 @@ void Qcommon_Frame(int msec)
             }
         }
     }
-
+*/
     if (fixedtime->value)
     {
         msec = fixedtime->value;
@@ -1606,7 +1608,7 @@ void Qcommon_Frame(int msec)
     }
 
     CL_Frame(msec);
-
+/*
     if (host_speeds->value)
     {
         time_after = Sys_Milliseconds();
@@ -1625,6 +1627,7 @@ void Qcommon_Frame(int msec)
         Com_Printf("all:%3i sv:%3i gm:%3i cl:%3i rf:%3i\n",
                    all, sv, gm, cl, rf);
     }
+*/
 }
 
 /*

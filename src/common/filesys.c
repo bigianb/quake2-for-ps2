@@ -486,6 +486,30 @@ void FS_FreeFile(void * buffer)
     Z_Free(buffer);
 }
 
+void makeCDROMPath(char* pDest, const char* pSrc)
+{
+    const char *s = pSrc;
+    if (*s == '.') {s += 2;}
+    *pDest++ = 'c';
+    *pDest++ = 'd';
+    *pDest++ = 'r';
+    *pDest++ = 'o';
+    *pDest++ = 'm';
+    *pDest++ = '0';
+    *pDest++ = ':';
+    *pDest++ = '\\';
+    while (*s) {
+        if (*s == '/'){
+            *pDest++ = '\\';
+        } else {
+            *pDest++ = toupper((unsigned char) *s);
+        }
+        s++;
+    }
+    *pDest++ = ';';
+    *pDest++ = '1';
+}
+
 /*
 =================
 FS_LoadPackFile
@@ -509,27 +533,7 @@ pack_t * FS_LoadPackFile(char * packfile)
 
     // Convert to upper case
     char ucName[256];
-    char *pDest = ucName;
-    char *s = packfile;
-    if (*s == '.') {s += 2;}
-    *pDest++ = 'c';
-    *pDest++ = 'd';
-    *pDest++ = 'r';
-    *pDest++ = 'o';
-    *pDest++ = 'm';
-    *pDest++ = '0';
-    *pDest++ = ':';
-    *pDest++ = '\\';
-    while (*s) {
-        if (*s == '/'){
-            *pDest++ = '\\';
-        } else {
-            *pDest++ = toupper((unsigned char) *s);
-        }
-        s++;
-    }
-    *pDest++ = ';';
-    *pDest++ = '1';
+    makeCDROMPath(ucName, packfile);
 
     packhandle = fopen(ucName, "rb");
     if (!packhandle)
