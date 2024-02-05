@@ -16,6 +16,8 @@
 #include "ps2/defs_ps2.h"
 #include "game/game.h" // For GetGameAPI()
 
+#include <ctype.h>
+
 // PS2DEV SDK:
 #include <kernel.h>
 #include <smod.h>
@@ -367,7 +369,6 @@ u32 Sys_HashString(const char * str)
 ================
 Sys_LoadBinaryFile
 
-Remarks: Uses the fio PS2DEV SDK API.
 ================
 */
 qboolean Sys_LoadBinaryFile(const char * filename, int * size_bytes, void ** data_ptr)
@@ -378,7 +379,16 @@ qboolean Sys_LoadBinaryFile(const char * filename, int * size_bytes, void ** dat
     void * file_data   = NULL;
     qboolean had_error = false;
 
-    fd = fopen(filename, "rb");
+    // Convert to upper case
+    char ucName[256];
+    char *pDest = ucName;
+    char *s = filename;
+    while (*s) {
+        *pDest++ = toupper((unsigned char) *s);
+        s++;
+    }
+
+    fd = fopen(ucName, "rb");
     if (fd < 0)
     {
         had_error = true;

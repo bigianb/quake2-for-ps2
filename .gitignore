@@ -3,3 +3,5 @@
 .DS_Store
 build/irx/usbd.s
 *.ELF
+baseq2
+*.iso

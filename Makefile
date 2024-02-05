@@ -13,7 +13,6 @@
 # All C source files used by the game and engine:
 #
 SRC_FILES = \
-	ps2/fact3.c \
 	ps2/tests/test_draw2d.c \
 	ps2/tests/test_draw3d.c \
 	ps2/builtin/backtile.c  \
@@ -142,6 +141,7 @@ VCL_FILES = color_triangles_clip_tris.vcl
 # ---------------------------------------------------------
 
 EE_LIBS =    \
+    -lcdvd   \
 	-ldma     \
 	-lgraph   \
 	-ldraw    \
@@ -160,6 +160,7 @@ EE_LIBS =    \
 #
 SRC_DIR        = src
 OUTPUT_DIR     = build
+FS_DIR		   = fs
 IOP_OUTPUT_DIR = irx
 VU_OUTPUT_DIR  = vu
 
@@ -167,7 +168,7 @@ VU_OUTPUT_DIR  = vu
 # Name of the binary executable (QPS2) and
 # object (.o) filenames derived from source filenames.
 #
-BIN_TARGET = $(OUTPUT_DIR)/QPS2.ELF
+BIN_TARGET = $(FS_DIR)/QPS2.ELF
 OBJ_FILES  = $(addprefix $(OUTPUT_DIR)/$(SRC_DIR)/, $(patsubst %.c, %.o, $(SRC_FILES)))
 
 #
@@ -245,8 +246,14 @@ endif # VERBOSE
 #  Make rules:
 # ---------------------------------------------------------
 
-all: $(BIN_TARGET)
+.PHONY : all iso run clean clean_vu
+
+
+all: iso
 #	$(QUIET) ee-strip --strip-all $(BIN_TARGET)
+
+iso: $(BIN_TARGET)
+	mkisofs -o ./build/qps2.iso ./fs
 
 #
 # C source files => OBJ files:
@@ -282,26 +289,6 @@ $(OUTPUT_DIR)/$(VU_OUTPUT_DIR)/%.vsm:
 	$(QUIET) $(MKDIR_CMD) $(dir $@)
 	$(QUIET) $(PS2_VCLPP) $(VCL_PATH)/$*.vcl $(dir $@)$*.pp.vcl -j
 	$(QUIET) $(PS2_VCL) -o $@ $(dir $@)$*.pp.vcl
-
-# ---------------------------------------------------------
-#  Custom 'run' rule:
-# ---------------------------------------------------------
-
-# NOTE: Hardcoded OSX path!
-ifndef INSTALL_PATH
-  INSTALL_PATH = /Applications/pcsx2.app/Contents/Resources/pcsx2
-endif
-
-# NOTE: Requires PCSX2, also hardcoded for OSX.
-ifndef RUN_CMD
-  RUN_CMD = open -a pcsx2
-endif
-
-# Copies the executable file to the "install dir" and calls the user-defined
-# run command, which normally is the shell command to start the emulator app.
-run: $(BIN_TARGET)
-	cp $(BIN_TARGET) $(INSTALL_PATH)/$(notdir $(BIN_TARGET))
-	$(RUN_CMD)
 
 # ---------------------------------------------------------
 #  Custom 'clean' rules:

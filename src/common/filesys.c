@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "common/q_common.h"
+#include <ctype.h>
 
 //===========================================================================
 
@@ -444,19 +445,6 @@ a null buffer will just return the file length without loading
 */
 int FS_LoadFile(const char * path, void ** buffer)
 {
-    //FIXME TEMP, just for development/testing
-    if (strcmp(path, "maps/fact3.bsp") == 0)
-    {
-        extern unsigned int size_fact3_data;
-        extern unsigned char fact3_data[];
-        if (buffer)
-        {
-            *buffer = fact3_data;
-        }
-        return size_fact3_data;
-    }
-    //END TEMP
-
     FILE * h;
     byte * buf;
     int len;
@@ -495,14 +483,6 @@ FS_FreeFile
 */
 void FS_FreeFile(void * buffer)
 {
-    //FIXME TEMP, just for development/testing
-    extern unsigned char fact3_data[];
-    if (buffer == fact3_data)
-    {
-        return;
-    }
-    //END TEMP
-
     Z_Free(buffer);
 }
 
@@ -527,12 +507,34 @@ pack_t * FS_LoadPackFile(char * packfile)
     dpackfile_t info[MAX_FILES_IN_PACK];
     unsigned checksum;
 
-    packhandle = fopen(packfile, "rb");
+    // Convert to upper case
+    char ucName[256];
+    char *pDest = ucName;
+    char *s = packfile;
+    if (*s == '.') {s += 2;}
+    *pDest++ = 'c';
+    *pDest++ = 'd';
+    *pDest++ = 'r';
+    *pDest++ = 'o';
+    *pDest++ = 'm';
+    *pDest++ = '0';
+    *pDest++ = ':';
+    *pDest++ = '/';
+    while (*s) {
+        *pDest++ = toupper((unsigned char) *s);
+        s++;
+    }
+    *pDest++ = ';';
+    *pDest++ = '1';
+
+    printf("try to load %s\n", ucName);
+    packhandle = fopen(ucName, "rb");
     if (!packhandle)
     {
+        printf("failed to load %s\n", ucName);
         return NULL;
     }
-
+    printf("opened %s, handle %d\n", ucName, (unsigned int)packhandle);
     fread(&header, 1, sizeof(header), packhandle);
     if (LittleLong(header.ident) != IDPAKHEADER)
     {

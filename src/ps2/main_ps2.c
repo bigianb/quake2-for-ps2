@@ -38,13 +38,7 @@ PS2 main():
 */
 int main(void)
 {
-    // The base path must be set for the PS2 because
-    // of the different drive prefixes. Defaults to USB.
-    #ifdef PS2_FS_BASE_PATH
-    FS_SetDefaultBasePath(PS2_FS_BASE_PATH);
-    #else // !PS2_FS_BASE_PATH
-    FS_SetDefaultBasePath("mass:"); // Assume USB drive.
-    #endif // PS2_FS_BASE_PATH
+    FS_SetDefaultBasePath(""); 
 
     // PS2 main() takes no arguments so we
     // fake a default program name argv[].
