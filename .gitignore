@@ -5,3 +5,4 @@ build/irx/usbd.s
 *.ELF
 baseq2
 *.iso
+build/irx/usbd.c

@@ -133,8 +133,7 @@ IRX_FILES = usbd.irx
 #
 # VCL/VU microprograms:
 #
-VCL_PATH  = src/ps2/vu1progs
-VCL_FILES = color_triangles_clip_tris.vcl
+VSM_FILES = src/ps2/vu1progs/color_triangles_clip_tris.vsm
 
 # ---------------------------------------------------------
 #  Libs from the PS2DEV SDK:
@@ -179,7 +178,7 @@ IOP_MODULES = $(addprefix $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/, $(patsubst %.irx, %.
 #
 # The VU microprograms:
 #
-VU_PROGS = $(addprefix $(OUTPUT_DIR)/$(VU_OUTPUT_DIR)/, $(patsubst %.vcl, %.o, $(VCL_FILES)))
+VU_PROGS = $(addprefix $(OUTPUT_DIR)/$(VU_OUTPUT_DIR)/, $(patsubst %.vsm, %.o, $(VSM_FILES)))
 
 #
 # Global #defines, C-flags and include paths:
@@ -200,16 +199,6 @@ PS2_CC = mips64r5900el-ps2-elf-gcc
 # Vector Unit assembler:
 #
 PS2_VU_DVP = dvp-as
-
-#
-# openvcl = Vector Command Line preprocessor.
-# (get it at: https://github.com/jsvennevid/openvcl)
-#
-# vclpp = Simple preprocessor I wrote to help, since VCL doesn't handle #defines and macros.
-# (get it at: https://github.com/glampert/vclpp)
-#
-PS2_VCL   = /Users/ian/dev/openvcl/openvcl
-PS2_VCLPP = /Users/ian/dev/vclpp/vclpp
 
 #
 # The same structure of src/ is recreated in build/, so we need mkdir.
@@ -270,25 +259,21 @@ $(OBJ_FILES): $(OUTPUT_DIR)/%.o: %.c
 #
 # IOP/IRX modules, compiled into the program:
 #
-$(IOP_MODULES): $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.o: $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.s
+$(IOP_MODULES): $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.o: $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.c
 	$(ECHO_BUILDING_IOP_MODS)
 	$(QUIET) $(PS2_CC) $(PS2_CFLAGS) -c $< -o $@
 
-$(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.s:
+$(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.c:
 	$(QUIET) $(MKDIR_CMD) $(dir $@)
-	$(QUIET) bin2s $(IRX_PATH)/$*.irx $@ $*_irx
+	$(QUIET) bin2c $(IRX_PATH)/$*.irx $@ $*_irx
 
 #
 # VU microprograms:
 #
-$(VU_PROGS): $(OUTPUT_DIR)/$(VU_OUTPUT_DIR)/%.o: $(OUTPUT_DIR)/$(VU_OUTPUT_DIR)/%.vsm
+$(VU_PROGS): $(OUTPUT_DIR)/$(VU_OUTPUT_DIR)/%.o: %.vsm
 	$(ECHO_ASSEMBLING_VU_PROGS)
-	$(QUIET) $(PS2_VU_DVP) $< -o $@
-
-$(OUTPUT_DIR)/$(VU_OUTPUT_DIR)/%.vsm:
 	$(QUIET) $(MKDIR_CMD) $(dir $@)
-	$(QUIET) $(PS2_VCLPP) $(VCL_PATH)/$*.vcl $(dir $@)$*.pp.vcl -j
-	$(QUIET) $(PS2_VCL) -o $@ $(dir $@)$*.pp.vcl
+	$(QUIET) $(PS2_VU_DVP) $< -o $@
 
 # ---------------------------------------------------------
 #  Custom 'clean' rules:
