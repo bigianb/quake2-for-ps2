@@ -126,9 +126,8 @@ SRC_FILES = \
 
 #
 # IOP/IRX modules pulled from the PS2DEV SDK:
-#
-IRX_PATH  = $(PS2SDK)/iop/irx
-IRX_FILES = usbd.irx
+#IRX_PATH  = $(PS2SDK)/iop/irx
+#IRX_FILES = usbd.irx
 
 #
 # VCL/VU microprograms:
@@ -173,7 +172,7 @@ OBJ_FILES  = $(addprefix $(OUTPUT_DIR)/$(SRC_DIR)/, $(patsubst %.c, %.o, $(SRC_F
 #
 # The IRX IOProcessor modules we embed:
 #
-IOP_MODULES = $(addprefix $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/, $(patsubst %.irx, %.o, $(IRX_FILES)))
+#IOP_MODULES = $(addprefix $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/, $(patsubst %.irx, %.o, $(IRX_FILES)))
 
 #
 # The VU microprograms:
@@ -259,13 +258,13 @@ $(OBJ_FILES): $(OUTPUT_DIR)/%.o: %.c
 #
 # IOP/IRX modules, compiled into the program:
 #
-$(IOP_MODULES): $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.o: $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.c
-	$(ECHO_BUILDING_IOP_MODS)
-	$(QUIET) $(PS2_CC) $(PS2_CFLAGS) -c $< -o $@
+#$(IOP_MODULES): $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.o: $(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.c
+#	$(ECHO_BUILDING_IOP_MODS)
+#	$(QUIET) $(PS2_CC) $(PS2_CFLAGS) -c $< -o $@
 
-$(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.c:
-	$(QUIET) $(MKDIR_CMD) $(dir $@)
-	$(QUIET) bin2c $(IRX_PATH)/$*.irx $@ $*_irx
+#$(OUTPUT_DIR)/$(IOP_OUTPUT_DIR)/%.c:
+#	$(QUIET) $(MKDIR_CMD) $(dir $@)
+#	$(QUIET) bin2c $(IRX_PATH)/$*.irx $@ $*_irx
 
 #
 # VU microprograms:

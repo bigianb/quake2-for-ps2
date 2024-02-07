@@ -47,28 +47,7 @@ Sys_LoadIOPModules
 */
 void Sys_LoadIOPModules(void)
 {
-    //
-    // Notice that the IRX modules are declared as 'extern void'.
-    // This seems like the best declaration, since they are not
-    // quite the same as arrays of bytes. Check out this discussion:
-    //   http://stackoverflow.com/q/10038964/1198654
-    // Emphasis to this answer:
-    //   http://stackoverflow.com/a/19054875/1198654
-    //
 
-    int result;
-
-    // usbd.irx:
-    extern void usbd_irx;
-    extern int size_usbd_irx;
-    result = SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
-    if (result <= 0)
-    {
-        Sys_Error("Failed to load IOP module usbd! %d", result);
-    }
-
-    // Give the IOP a moment to be sure the modules are ready.
-    nopdelay();
 }
 
 /*
@@ -83,7 +62,6 @@ void Sys_Init(void)
     // but this is not strictly necessary. These
     // are lazily called by the PS2DEV SDK otherwise.
     SifInitRpc(0);
-    //fioInit();
 
     // Load the built-in IOP modules we need for the game.
     Sys_LoadIOPModules();
@@ -107,6 +85,9 @@ void Sys_Error(const char * error, ...)
     vsnprintf(tempbuff, sizeof(tempbuff), error, argptr);
     tempbuff[sizeof(tempbuff) - 1] = '\0';
     va_end(argptr);
+
+    puts(tempbuff);
+    fflush(stdout);
 
     // Make sure no other rendering ops are in-flight,
     // since we are bringing up the crash screen.
@@ -365,76 +346,6 @@ u32 Sys_HashString(const char * str)
 //
 //=============================================================================
 
-/*
-================
-Sys_LoadBinaryFile
-
-================
-*/
-qboolean Sys_LoadBinaryFile(const char * filename, int * size_bytes, void ** data_ptr)
-{
-    FILE* fd;
-    int file_len;
-    int num_read;
-    void * file_data   = NULL;
-    qboolean had_error = false;
-
-    // Convert to upper case
-    char ucName[256];
-    char *pDest = ucName;
-    char *s = filename;
-    while (*s) {
-        *pDest++ = toupper((unsigned char) *s);
-        s++;
-    }
-
-    fd = fopen(ucName, "rb");
-    if (fd < 0)
-    {
-        had_error = true;
-        goto BAIL;
-    }
-
-    file_len = fseek(fd, 0, SEEK_END);
-    if (file_len <= 0)
-    {
-        had_error = true;
-        goto BAIL;
-    }
-
-    fseek(fd, 0, SEEK_SET); // rewind
-
-    // Alloc or fail with a Sys_Error.
-    file_data = PS2_MemAlloc(file_len, MEMTAG_MISC);
-
-    num_read = fread(file_data, 1, file_len, fd);
-    if (num_read != file_len)
-    {
-        had_error = true;
-        goto BAIL;
-    }
-
-BAIL:
-
-    if (fd >= 0)
-    {
-        fclose(fd);
-    }
-
-    if (had_error)
-    {
-        if (file_data != NULL)
-        {
-            PS2_MemFree(file_data, file_len, MEMTAG_MISC);
-            file_data = NULL;
-        }
-        file_len = 0;
-    }
-
-    *size_bytes = file_len;
-    *data_ptr   = file_data;
-    return !had_error;
-}
 
 /*
 ================

@@ -975,7 +975,8 @@ static void BMod_TriangulatePolygon(ps2_mdl_poly_t * poly)
     // better to keep a num_triangles member in the polygon struct instead!
     if (triangles_done != num_triangles)
     {
-        Sys_Error("BMod_TriangulatePolygon: Unexpected triangle count!");
+        // IJB
+        //Sys_Error("BMod_TriangulatePolygon: Unexpected triangle count!");
     }
 
     // We are done with these macros now.

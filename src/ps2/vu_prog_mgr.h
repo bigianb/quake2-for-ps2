@@ -59,8 +59,8 @@ typedef struct
 // instance referencing the external code.
 //
 #define DECLARE_VU_MICROPROGRAM(prog_name)             \
-    extern void prog_name##_CodeStart VU_DATA_SECTION; \
-    extern void prog_name##_CodeEnd   VU_DATA_SECTION; \
+    extern const u64 prog_name##_CodeStart VU_DATA_SECTION; \
+    extern const u64 prog_name##_CodeEnd   VU_DATA_SECTION; \
     ps2_vu_prog_t prog_name PS2_ALIGN(16) = {          \
         &prog_name##_CodeStart,                        \
         &prog_name##_CodeEnd,                          \
