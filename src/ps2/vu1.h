@@ -13,14 +13,12 @@
 #ifndef PS2_VU1_H
 #define PS2_VU1_H
 
-#include "ps2/vu_prog_mgr.h"
-
 // Initialize local VU1 library data. Call it at renderer startup.
 void VU1_Init(void);
 void VU1_Shutdown(void);
 
 // Send program microcode to the VU1.
-void VU1_UploadProg(int dest, void * start, void * end);
+void VU1_UploadProg(void * start, void * end);
 
 // Begin a new program run;
 // End the current list and start the VU1 program (located in micromem 'start' address)
@@ -34,7 +32,6 @@ void VU1_ListAddEnd(void);
 // Add data to the current list:
 void VU1_ListData(int dest_address, void * data, int quad_size);
 void VU1_ListAdd128(u64 v1, u64 v2);
-void VU1_ListAdd64(u64 v);
 void VU1_ListAdd32(u32 v);
 void VU1_ListAddFloat(float v);
 

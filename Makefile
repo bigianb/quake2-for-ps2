@@ -13,8 +13,6 @@
 # All C source files used by the game and engine:
 #
 SRC_FILES = \
-	ps2/tests/test_draw2d.c \
-	ps2/tests/test_draw3d.c \
 	ps2/builtin/backtile.c  \
 	ps2/builtin/conback.c   \
 	ps2/builtin/conchars.c  \
@@ -22,7 +20,6 @@ SRC_FILES = \
 	ps2/builtin/inventory.c \
 	ps2/builtin/palette.c   \
 	ps2/debug_print.c       \
-	ps2/dma_mgr.c           \
 	ps2/main_ps2.c          \
 	ps2/math_funcs.c        \
 	ps2/mem_alloc.c         \
@@ -35,7 +32,6 @@ SRC_FILES = \
 	ps2/vec_mat.c           \
 	ps2/vid_ps2.c           \
 	ps2/vu1.c               \
-	ps2/vu_prog_mgr.c       \
 	client/cl_cin.c         \
 	client/cl_ents.c        \
 	client/cl_fx.c          \
@@ -144,6 +140,7 @@ EE_LIBS =    \
 	-lgraph   \
 	-ldraw    \
 	-lpatches \
+	-lpacket2 \
 	-lm      \
 	-lc       \
 	-lkernel

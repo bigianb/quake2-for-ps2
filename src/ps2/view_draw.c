@@ -19,6 +19,8 @@
 #include "ps2/vu1.h"
 #include "ps2/gs_defs.h"
 
+#define VU_DATA_SECTION __attribute__((section(".vudata")))
+
 //
 // ---------------------------
 // NOTES ON THE VIEW RENDERING
@@ -598,7 +600,7 @@ static qboolean vu_prog_set = false;
 void SetVUProg(void)
 {
     if (vu_prog_set) { return; }
-    VU1_UploadProg(0, &VU1Prog_Color_Triangles_CodeStart, &VU1Prog_Color_Triangles_CodeEnd);
+    VU1_UploadProg(&VU1Prog_Color_Triangles_CodeStart, &VU1Prog_Color_Triangles_CodeEnd);
     vu_prog_set = true;
 }
 
@@ -632,7 +634,7 @@ enum
     MAX_VERTS_PER_VU_BATCH = MAX_TRIS_PER_VU_BATCH * 3
 };
 
-extern u32 vu1_buffer_index;
+static int vu1_buffer_index = 0;
 static vu_batch_data_t ps2_batch_data_buffers[2];
 
 static vu_batch_data_t * ps2_current_batch_data = NULL;
@@ -657,6 +659,7 @@ static void PS2_BeginNewVUBatch(void)
 
     ++ps2_num_vu_batches;
     ps2_current_batch_data = &ps2_batch_data_buffers[vu1_buffer_index];
+    vu1_buffer_index ^= 1;
 
     // Copy the MVP matrix as-is:
     ps2_current_batch_data->mvp_matrix = ps2_mvp_matrix;

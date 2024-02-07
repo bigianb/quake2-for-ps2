@@ -9,363 +9,119 @@
  * This source code is released under the GNU GPL v2 license.
  * Check the accompanying LICENSE file for details.
  * ================================================================================================ */
+#include <tamtypes.h>
 
 #include "ps2/vu1.h"
 #include "ps2/mem_alloc.h"
 #include "ps2/defs_ps2.h"
 #include "game/q_shared.h" // For qboolean and stuff...
 
-// PS2DEV SDK:
-#include <kernel.h>
-#include <dma_tags.h>
+#include <vif_registers.h>
 #include <dma.h>
+#include <packet2.h>
+#include <packet2_utils.h>
 
-//=============================================================================
-//
-// Following code is based on lib PDK by Jesper Svennevid, Daniel Collin.
-//
-//=============================================================================
-
-// DMA hardware defines:
-#define VU1_DMA_END_TAG(COUNT) (((u64)(0x7) << 28) | COUNT)
-#define VU1_DMA_CNT_TAG(COUNT) (((u64)(0x1) << 28) | COUNT)
-#define VU1_DMA_REF_TAG(ADDR, COUNT) ((((u64)ADDR) << 32) | (0x3 << 28) | COUNT)
-
-// VIF hardware defines:
-#define VU1_VIF_NOP    0x00
-#define VU1_VIF_MPG    0x4A
-#define VU1_VIF_MSCAL  0x14
-#define VU1_VIF_STCYL  0x01
-#define VU1_VIF_FLUSH  0x11
-#define VU1_VIF_UNPACK 0x60
-#define VU1_VIF_UNPACK_V4_32 (VU1_VIF_UNPACK | 0x0C)
-#define VU1_VIF_CODE(CMD, NUM, IMMEDIATE) ((((u32)(CMD)) << 24) | (((u32)(NUM)) << 16) | ((u32)(IMMEDIATE)))
-
-//=============================================================================
-
-typedef struct
-{
-    void *   offset;
-    void *   kickbuffer;
-    int      dma_size;
-    int      cnt_dma_dest;
-    qboolean is_buiding_dma; // True when between VU1_ListAddBegin/VU1_ListAddEnd
-} vu1_context_t;
-
-// Allowed to be accessed externally.
-u32 vu1_buffer_index = 0;
-
-// Locals:
-static byte * vu1_current_buffer;
-static byte * vu1_dma_buffers[2] PS2_ALIGN(16);
-static vu1_context_t vu1_local_context PS2_ALIGN(16);
-
-// Wait time for the VIF DMAs: -1 no time out. Wait till finished.
-static const int VU1_DMA_CHAN_TIMEOUT = -1;
-
-// We have two buffers of this size for the VIF DMAs.
-static const int VU1_DMA_BUFFER_SIZE_BYTES = 512 * 1024; // 1MB for both
-
-//=============================================================================
-
-/*
-================
-VU1_CodeSize
-
-Local helper function.
-================
-*/
-static int VU1_CodeSize(u32 * start, u32 * end)
-{
-    int size = (end - start) / 2;
-
-    // If size is odd we have make it even in order for the transfer to work
-    // (quadwords, because of that its VERY important to have an extra nop nop
-    // at the end of each VU program.
-    if (size & 1)
-    {
-        ++size;
-    }
-    return size;
-}
-
-/*
-================
-VU1_Init
-================
-*/
 void VU1_Init(void)
 {
     dma_channel_initialize(DMA_CHANNEL_VIF1, NULL, 0);
-
-    int i;
-    for (i = 0; i < sizeof(vu1_dma_buffers) / sizeof(vu1_dma_buffers[0]); ++i)
-    {
-        vu1_dma_buffers[i] = PS2_MemAllocAligned(16, VU1_DMA_BUFFER_SIZE_BYTES, MEMTAG_RENDERER);
-    }
-
-    vu1_buffer_index   = 0;
-    vu1_current_buffer = vu1_dma_buffers[0];
+	dma_channel_fast_waits(DMA_CHANNEL_VIF1);
 }
 
-/*
-================
-VU1_Shutdown
-================
-*/
+// TODO: allocate once and just reset them when switching.
+static packet2_t *buildingPacket = NULL;
+static packet2_t *sendingPacket = NULL;
+
 void VU1_Shutdown(void)
 {
-    int i;
-    for (i = 0; i < sizeof(vu1_dma_buffers) / sizeof(vu1_dma_buffers[0]); ++i)
-    {
-        PS2_MemFree(vu1_dma_buffers[i], VU1_DMA_BUFFER_SIZE_BYTES, MEMTAG_RENDERER);
-        vu1_dma_buffers[i] = NULL;
+    if (buildingPacket){
+        packet2_free(buildingPacket);
+        buildingPacket = NULL;
     }
-
-    vu1_buffer_index   = 0;
-    vu1_current_buffer = NULL;
-    memset(&vu1_local_context, 0, sizeof(vu1_local_context));
+    if (sendingPacket){
+        packet2_free(sendingPacket);
+        sendingPacket = NULL;
+    }
 }
 
-/*
-================
-VU1_UploadProg
-================
-*/
-void VU1_UploadProg(int dest, void * start, void * end)
+void VU1_UploadProg(void * vu1_code_start, void * vu1_code_end)
 {
-    if (vu1_dma_buffers[0] == NULL)
-    {
-        Sys_Error("Call VU1_Init() before uploading a microprogram!");
-    }
-
-    printf("uploading VU1 prog from 0x%x to 0x%x\n", (u32)start, (u32)end);
-
-    // We can use one of the DMA buffers for the program upload,
-    // since we synchronize immediately after the upload.
-    byte * chain = vu1_dma_buffers[0];
-    dma_channel_wait(DMA_CHANNEL_VIF1, VU1_DMA_CHAN_TIMEOUT); // Finish any pending transfers first.
-
-    // Get the size of the code as we can only send 256 instructions in each MPG tag.
-    int count = VU1_CodeSize(start, end);
-    while (count > 0)
-    {
-        u32 current_count = (count > 256) ? 256 : count;
-
-        *((u64 *)chain) = VU1_DMA_REF_TAG((u32)start, current_count / 2); chain += sizeof(u64);
-        *((u32 *)chain) = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0); chain += sizeof(u32);
-        *((u32 *)chain) = VU1_VIF_CODE(VU1_VIF_MPG, current_count & 0xFF, dest); chain += sizeof(u32);
-
-        start += current_count * 2;
-        count -= current_count;
-        dest  += current_count;
-    }
-
-    *((u64 *)chain) = VU1_DMA_END_TAG(0); chain += sizeof(u64);
-    *((u32 *)chain) = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0); chain += sizeof(u32);
-    *((u32 *)chain) = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0); chain += sizeof(u32);
-
-    // Send it to VIF1:
-    FlushCache(0);
-    dma_channel_send_chain(DMA_CHANNEL_VIF1, vu1_dma_buffers[0], 0, DMA_FLAG_TRANSFERTAG, 0);
-    dma_channel_wait(DMA_CHANNEL_VIF1, VU1_DMA_CHAN_TIMEOUT); // Synchronize immediately.
+    // + 1 for end tag
+	u32 packet_size = packet2_utils_get_packet_size_for_program(&vu1_code_start, &vu1_code_end) + 1; 
+	packet2_t *packet2 = packet2_create(packet_size, P2_TYPE_NORMAL, P2_MODE_CHAIN, 1);
+	packet2_vif_add_micro_program(packet2, 0, &vu1_code_start, &vu1_code_end);
+	packet2_utils_vu_add_end_tag(packet2);
+	dma_channel_send_packet2(packet2, DMA_CHANNEL_VIF1, 1);
+	dma_channel_wait(DMA_CHANNEL_VIF1, 0);
+	packet2_free(packet2);
 }
 
-/*
-================
-VU1_Begin
-================
-*/
+#define MAX_PACKET_SIZE_QW 1024 * 1000
+
 void VU1_Begin(void)
 {
-    // Switch context:
-    //  1 XOR 1 = 0
-    //  0 XOR 1 = 1
-    vu1_buffer_index ^= 1;
-    vu1_current_buffer = vu1_dma_buffers[vu1_buffer_index];
-
-    // Rest frame context:
-    vu1_local_context.dma_size       = 0;
-    vu1_local_context.cnt_dma_dest   = 0;
-    vu1_local_context.is_buiding_dma = false;
-    vu1_local_context.offset         = NULL;
-    vu1_local_context.kickbuffer     = vu1_current_buffer;
+    if (buildingPacket){
+        packet2_free(buildingPacket);
+        buildingPacket = NULL;
+    }
+    buildingPacket = packet2_create(MAX_PACKET_SIZE_QW, P2_TYPE_NORMAL, P2_MODE_CHAIN, 1);
 }
 
-/*
-================
-VU1_End
-================
-*/
 void VU1_End(int start)
 {
-    *((u64 *)vu1_current_buffer) = VU1_DMA_END_TAG(0); vu1_current_buffer += sizeof(u64);
-
     if (start >= 0)
     {
-        *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_FLUSH, 0, 0); vu1_current_buffer += sizeof(u32);
-        *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_MSCAL, 0, start); vu1_current_buffer += sizeof(u32);
+        packet2_utils_vu_add_start_program(buildingPacket, start);
+	    packet2_utils_vu_add_end_tag(buildingPacket);
     }
-    else
-    {
-        *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_NOP, 0, 0); vu1_current_buffer += sizeof(u32);
-    }
+    packet2_utils_vu_add_end_tag(buildingPacket);
 
     // Wait for previous transfer to complete if not yet:
-    dma_channel_wait(DMA_CHANNEL_VIF1, VU1_DMA_CHAN_TIMEOUT);
+    dma_channel_wait(DMA_CHANNEL_VIF1, 0);
 
-    // Start new one.
-    dma_channel_send_chain(DMA_CHANNEL_VIF1, vu1_local_context.kickbuffer, 0, DMA_FLAG_TRANSFERTAG, 0);
+    if (sendingPacket){
+        packet2_free(sendingPacket);
+        sendingPacket = NULL;
+    }
+    sendingPacket = buildingPacket;
+    buildingPacket = NULL;
+    dma_channel_send_packet2(sendingPacket, DMA_CHANNEL_VIF1, 1);
 }
 
-/*
-================
-VU1_ListAddBegin
-================
-*/
 void VU1_ListAddBegin(int address)
 {
-    if (vu1_local_context.is_buiding_dma)
-    {
-        Sys_Error("VU1_ListAddBegin: Already building a DMA list!");
-    }
-
-    vu1_local_context.offset         = vu1_current_buffer;
-    vu1_local_context.cnt_dma_dest   = address;
-    vu1_local_context.is_buiding_dma = true;
-
-    // These are placeholders filled later by VU1_ListAddEnd().
-    *((u64 *)vu1_current_buffer) = VU1_DMA_CNT_TAG(0); vu1_current_buffer += sizeof(u64);
-    *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_STCYL, 0, 0x0101); vu1_current_buffer += sizeof(u32);
-    *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_UNPACK_V4_32, 0, 0); vu1_current_buffer += sizeof(u32);
+    packet2_utils_vu_open_unpack(buildingPacket, address, 0);
 }
 
-/*
-================
-VU1_ListAddEnd
-================
-*/
 void VU1_ListAddEnd(void)
 {
-    if (!vu1_local_context.is_buiding_dma)
-    {
-        Sys_Error("VU1_ListAddEnd: Missing a DMA list begin!");
-    }
-
-    // Pad to qword alignment if necessary:
-    while (vu1_local_context.dma_size & 0xF)
-    {
-        *((u32 *)vu1_current_buffer) = 0; vu1_current_buffer += sizeof(u32);
-        vu1_local_context.dma_size += sizeof(u32);
-    }
-
-    const int dma_size_qwords = vu1_local_context.dma_size >> 4;
-    *((u64 *)vu1_local_context.offset) = VU1_DMA_CNT_TAG(dma_size_qwords); vu1_local_context.offset += sizeof(u64);
-    *((u32 *)vu1_local_context.offset) = VU1_VIF_CODE(VU1_VIF_STCYL, 0, 0x0101); vu1_local_context.offset += sizeof(u32);
-    *((u32 *)vu1_local_context.offset) = VU1_VIF_CODE(VU1_VIF_UNPACK_V4_32, dma_size_qwords, vu1_local_context.cnt_dma_dest);
-    vu1_local_context.offset += sizeof(u32);
-
-    vu1_local_context.is_buiding_dma = false;
+    packet2_utils_vu_close_unpack(buildingPacket);
 }
 
-/*
-================
-VU1_ListData
-================
-*/
 void VU1_ListData(int dest_address, void * data, int quad_size)
 {
-    if ((u32)data & 0xF)
-    {
-        Sys_Error("VU1_ListData: Pointer is not 16-bytes aligned!");
-    }
-
-    *((u64 *)vu1_current_buffer) = VU1_DMA_REF_TAG((u32)data, quad_size); vu1_current_buffer += sizeof(u64);
-    *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_STCYL, 0, 0x0101); vu1_current_buffer += sizeof(u32);
-    *((u32 *)vu1_current_buffer) = VU1_VIF_CODE(VU1_VIF_UNPACK_V4_32, quad_size, dest_address); vu1_current_buffer += sizeof(u32);
+    packet2_utils_vu_add_unpack_data(buildingPacket, dest_address, data, quad_size, 0);
 }
 
-/*
-================
-VU1_ListAdd128
-================
-*/
 void VU1_ListAdd128(u64 v1, u64 v2)
 {
-    if (!vu1_local_context.is_buiding_dma)
-    {
-        Sys_Error("VU1_ListAdd128: Missing a DMA list begin!");
-    }
-
-    *((u64 *)vu1_current_buffer) = v1; vu1_current_buffer += sizeof(u64);
-    *((u64 *)vu1_current_buffer) = v2; vu1_current_buffer += sizeof(u64);
-    vu1_local_context.dma_size += sizeof(u64) * 2;
+    packet2_add_2x_s64(buildingPacket, v1, v2);
 }
 
-/*
-================
-VU1_ListAddGIFTag
-================
-*/
 u64 * VU1_ListAddGIFTag(void)
 {
-    if (!vu1_local_context.is_buiding_dma)
-    {
-        Sys_Error("VU1_ListAddGIFTag: Missing a DMA list begin!");
-    }
+    u64* pGifTag = (u64*)buildingPacket->next;
+    VU1_ListAdd128(0, 0);
 
-    // Empty tag that the caller can fill up.
-    u64 * tag_ptr = (u64 *)vu1_current_buffer;
-    *((u64 *)vu1_current_buffer) = 0; vu1_current_buffer += sizeof(u64);
-    *((u64 *)vu1_current_buffer) = 0; vu1_current_buffer += sizeof(u64);
-    vu1_local_context.dma_size += sizeof(u64) * 2;
-    return tag_ptr;
+   // TODO: FIXME this is ugly
+   return pGifTag;
 }
 
-/*
-================
-VU1_ListAdd64
-================
-*/
-void VU1_ListAdd64(u64 v)
-{
-    if (!vu1_local_context.is_buiding_dma)
-    {
-        Sys_Error("VU1_ListAdd64: Missing a DMA list begin!");
-    }
-
-    *((u64 *)vu1_current_buffer) = v; vu1_current_buffer += sizeof(u64);
-    vu1_local_context.dma_size += sizeof(u64);
-}
-
-/*
-================
-VU1_ListAdd32
-================
-*/
 void VU1_ListAdd32(u32 v)
 {
-    if (!vu1_local_context.is_buiding_dma)
-    {
-        Sys_Error("VU1_ListAdd32: Missing a DMA list begin!");
-    }
-
-    *((u32 *)vu1_current_buffer) = v; vu1_current_buffer += sizeof(u32);
-    vu1_local_context.dma_size += sizeof(u32);
+    packet2_add_u32(buildingPacket, v);
 }
 
-/*
-================
-VU1_ListAddFloat
-================
-*/
 void VU1_ListAddFloat(float v)
 {
-    if (!vu1_local_context.is_buiding_dma)
-    {
-        Sys_Error("VU1_ListAddFloat: Missing a DMA list begin!");
-    }
-
-    *((float *)vu1_current_buffer) = v; vu1_current_buffer += sizeof(float);
-    vu1_local_context.dma_size += sizeof(float);
+    packet2_add_float(buildingPacket, v);
 }
