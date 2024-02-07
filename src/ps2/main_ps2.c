@@ -38,8 +38,6 @@ int main(void)
         {
             newtime = Sys_Milliseconds();
             time = newtime - oldtime;
-
-            time = 10;   // hack
         } while (time < 1);
 
         Qcommon_Frame(time);

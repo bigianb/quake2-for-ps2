@@ -1362,7 +1362,6 @@ void SCR_UpdateScreen(void)
         }
         else
         {
-            printf("    draw 3d\n");
             // make sure the game palette is active
             if (cl.cinematicpalette_active)
             {

@@ -24,6 +24,20 @@
 #include <sifrpc.h>
 #include <loadfile.h>
 
+static
+void Kputc(char c) {
+    while (_lw(0x1000f130) & 0x8000) { __asm__ ("nop\nnop\nnop\n"); }
+    
+	*((char *)0x1000f180) = c;
+}
+
+static
+void Kputs(const char *s) {
+	while (*s != 0) {
+		Kputc(*s++);
+	}
+}
+
 // ref_ps2.c
 extern void PS2_RendererShutdown(void);
 
@@ -86,8 +100,7 @@ void Sys_Error(const char * error, ...)
     tempbuff[sizeof(tempbuff) - 1] = '\0';
     va_end(argptr);
 
-    puts(tempbuff);
-    fflush(stdout);
+    Kputs(tempbuff);
 
     // Make sure no other rendering ops are in-flight,
     // since we are bringing up the crash screen.
@@ -262,6 +275,8 @@ char * Sys_ConsoleInput(void)
     return NULL; // Not available on PS2
 }
 
+
+
 /*
 ================
 Sys_ConsoleOutput
@@ -269,9 +284,7 @@ Sys_ConsoleOutput
 */
 void Sys_ConsoleOutput(const char * string)
 {
-    (void)string;
-    //Dbg_ScrPrintf("%s", string);
-    // Reserve the debug screen for fatal error reporting only.
+    Kputs(string);
 }
 
 /*

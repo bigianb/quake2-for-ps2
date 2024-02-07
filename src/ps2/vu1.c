@@ -139,6 +139,8 @@ void VU1_UploadProg(int dest, void * start, void * end)
         Sys_Error("Call VU1_Init() before uploading a microprogram!");
     }
 
+    printf("uploading VU1 prog from 0x%x to 0x%x\n", (u32)start, (u32)end);
+
     // We can use one of the DMA buffers for the program upload,
     // since we synchronize immediately after the upload.
     byte * chain = vu1_dma_buffers[0];

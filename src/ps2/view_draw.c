@@ -591,8 +591,8 @@ static void PS2_DrawBrushModel(const entity_t * ent)
 //=============================================================================
 //FIXME TEMP BEGIN
 
-extern void VU1Prog_Color_Triangles_CodeStart VU_DATA_SECTION;
-extern void VU1Prog_Color_Triangles_CodeEnd   VU_DATA_SECTION;
+extern u32 VU1Prog_Color_Triangles_CodeStart VU_DATA_SECTION;
+extern u32 VU1Prog_Color_Triangles_CodeEnd   VU_DATA_SECTION;
 
 static qboolean vu_prog_set = false;
 void SetVUProg(void)
@@ -977,10 +977,10 @@ void PS2_DrawFrameSetup(const refdef_t * view_def)
     Mat4_Identity(&ps2_model_to_world_matrix);
 
     //TEMP makes the word rotate around the camera
-    static float rotation_angle = 0.0f;
-    Mat4_MakeRotationZ(&ps2_model_to_world_matrix, rotation_angle);
-    Mat4_Multiply(&ps2_mvp_matrix, &ps2_model_to_world_matrix, &ps2_view_proj_matrix);
-    rotation_angle += 0.01f;
+    //static float rotation_angle = 0.0f;
+    //Mat4_MakeRotationZ(&ps2_model_to_world_matrix, rotation_angle);
+    //Mat4_Multiply(&ps2_mvp_matrix, &ps2_model_to_world_matrix, &ps2_view_proj_matrix);
+    //rotation_angle += 0.01f;
 
     // Update the frustum planes:
     PS2_SetUpFrustum(view_def);
