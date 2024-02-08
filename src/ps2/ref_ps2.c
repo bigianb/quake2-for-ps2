@@ -1327,7 +1327,7 @@ void PS2_EndFrame(void)
 
     // V-Sync wait:
     graph_wait_vsync();
-    draw_wait_finish();
+    //draw_wait_finish();   // causes Play to hang
 
     graph_set_framebuffer_filtered(ps2ref.frame_buffers[ps2ref.frame_index].address,
                                    ps2ref.frame_buffers[ps2ref.frame_index].width,
