@@ -1868,8 +1868,8 @@ void CL_Init(void)
 
     // all archived variables will now be loaded
 
-    Con_Init(); // console init (first so we get the early prints)
     VID_Init(); // video init
+    Con_Init(); // console init (first so we get the early prints)
     S_Init();   // sound must be initialized after window is created
     V_Init();   // player view init
 

@@ -23,6 +23,7 @@
 #include <gs_psm.h>
 #include <dma.h>
 #include <graph.h>
+#include <packet2.h>
 #include <draw.h>
 
 //TODO:
@@ -397,23 +398,15 @@ static void PS2_InitGSBuffers(int vidMode, int fbPsm, int zPsm, qboolean interla
     graph_enable_output();
 }
 
-/*
-================
-PS2_InitDrawingEnvironment
-
-Remarks: Local function.
-================
-*/
 static void PS2_InitDrawingEnvironment(void)
 {
-    // We can grab one of the frame_packets to this temp.
-    // It is not in use yet.
-    ps2_gs_packet_t * packet = &ps2ref.frame_packets[1];
+    packet2_t *packet2 = packet2_create(20, P2_TYPE_NORMAL, P2_MODE_NORMAL, 0);
 
-    // Set framebuffer and virtual screen offsets:
-    qword_t * q = packet->data;
-    q = draw_setup_environment(q, 0, &ps2ref.frame_buffers[0], &ps2ref.z_buffer);
-    q = draw_primitive_xyoffset(q, 0, 2048 - (viddef.width / 2), 2048 - (viddef.height / 2));
+	// This will setup a default drawing environment.
+	packet2_update(packet2, draw_setup_environment(packet2->next, 0, &ps2ref.frame_buffers[0], &ps2ref.z_buffer));
+
+	// Now reset the primitive origin to 2048-width/2,2048-height/2.
+	packet2_update(packet2, draw_primitive_xyoffset(packet2->next, 0, 2048 - (viddef.width / 2), 2048 - (viddef.height / 2)));
 
     // Default texture addressing mode: REPEAT
     texwrap_t wrap;
@@ -423,44 +416,44 @@ static void PS2_InitDrawingEnvironment(void)
     wrap.minv = 0;
     wrap.maxu = MAX_TEXIMAGE_SIZE;
     wrap.maxv = MAX_TEXIMAGE_SIZE;
-    q = draw_texture_wrapping(q, 0, &wrap);
+    packet2_update(packet2, draw_texture_wrapping(packet2->next, 0, &wrap));
 
-    q = draw_finish(q);
-    dma_channel_send_normal(DMA_CHANNEL_GIF, packet->data, (q - packet->data), 0, 0);
-    dma_wait_fast(); // -- Synchronize immediately.
+	// Finish setting up the environment.
+	packet2_update(packet2, draw_finish(packet2->next));
+
+	// Now send the packet, no need to wait since it's the first.
+	dma_channel_send_packet2(packet2, DMA_CHANNEL_GIF, 1);
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
+	//dma_wait_fast();
+
+	packet2_free(packet2);
 }
 
-/*
-================
-PS2_ClearScreen
-
-Remarks: Local function.
-================
-*/
 static void PS2_ClearScreen(void)
 {
-    static qword_t scrap_dma_buffer[64] PS2_ALIGN(16);
+    packet2_t *clear = packet2_create(35, P2_TYPE_NORMAL, P2_MODE_NORMAL, 0);
 
-    qword_t * qwptr  = scrap_dma_buffer;
     const int width  = viddef.width;
     const int height = viddef.height;
 
-    BEGIN_DMA_TAG(qwptr);
-    qwptr = draw_disable_tests(qwptr, 0, &ps2ref.z_buffer);
-
-    qwptr = draw_clear(qwptr, 0,
-                   2048 - (width  / 2),
-                   2048 - (height / 2),
-                   width, height,
-                   ps2ref.screen_color.r,
+    // Clear framebuffer but don't update zbuffer.
+	packet2_update(clear, draw_disable_tests(clear->next, 0, &ps2ref.z_buffer));
+	packet2_update(clear, draw_clear(clear->next, 0, 2048 - (width  / 2), 2048 - (height / 2),
+    width, height, ps2ref.screen_color.r,
                    ps2ref.screen_color.g,
-                   ps2ref.screen_color.b);
+                   ps2ref.screen_color.b));
+	packet2_update(clear, draw_enable_tests(clear->next, 0, &ps2ref.z_buffer));
+	packet2_update(clear, draw_finish(clear->next));
 
-    qwptr = draw_enable_tests(qwptr, 0, &ps2ref.z_buffer);
-    END_DMA_TAG(qwptr);
+	// Now send our current dma chain.
+	//dma_wait_fast();
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
+	dma_channel_send_packet2(clear, DMA_CHANNEL_GIF, 1);
 
-    dma_channel_send_chain(DMA_CHANNEL_GIF, scrap_dma_buffer, 0, DMA_FLAG_TRANSFERTAG, 0);
-    dma_wait_fast(); // -- Synchronize immediately.
+	packet2_free(clear);
+
+	// Wait for scene to finish drawing
+	draw_wait_finish();
 }
 
 /*
@@ -523,7 +516,8 @@ static void PS2_FlushPipeline(void)
     ps2ref.current_frame_qwptr  = ps2ref.current_frame_packet->data;
 
     // Synchronize.
-    dma_wait_fast();
+    //dma_wait_fast();
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
     ps2_pipe_flushes++;
 }
 
@@ -1089,7 +1083,8 @@ void PS2_RendererShutdown(void)
     // called between BeginFrame/EndFrame, not quite sure why...
     if (ps2ref.flip_fb_packet.data != NULL)
     {
-        dma_wait_fast();
+        //dma_wait_fast();
+        dma_channel_wait(DMA_CHANNEL_GIF, 0);
 
         framebuffer_t * fb = &ps2ref.frame_buffers[0];
         qword_t * q = ps2ref.flip_fb_packet.data;
@@ -1099,7 +1094,8 @@ void PS2_RendererShutdown(void)
 
         dma_channel_send_normal_ucab(DMA_CHANNEL_GIF, ps2ref.flip_fb_packet.data,
                                      (q - ps2ref.flip_fb_packet.data), 0);
-        dma_wait_fast();
+        dma_channel_wait(DMA_CHANNEL_GIF, 0);
+        //dma_wait_fast();
     }
 
     draw_wait_finish();
@@ -1135,7 +1131,8 @@ void PS2_WaitGSDrawFinish(void)
     qwptr = draw_finish(qwptr);
 
     dma_channel_send_normal(DMA_CHANNEL_GIF, scrap_dma_buffer, (qwptr - scrap_dma_buffer), 0, 0);
-    dma_wait_fast(); // -- Synchronize immediately.
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
+    //dma_wait_fast(); // -- Synchronize immediately.
 
     draw_wait_finish();
 }
@@ -1322,7 +1319,8 @@ void PS2_EndFrame(void)
     ps2ref.current_frame_qwptr = draw_finish(ps2ref.current_frame_qwptr);
     END_DMA_TAG_AND_CHAIN(ps2ref.current_frame_qwptr);
 
-    dma_wait_fast();
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
+    //dma_wait_fast();
     dma_channel_send_chain(DMA_CHANNEL_GIF, ps2ref.current_frame_packet->data,
                            (ps2ref.current_frame_qwptr - ps2ref.current_frame_packet->data),
                            0, 0);
@@ -1347,7 +1345,8 @@ void PS2_EndFrame(void)
     q = draw_framebuffer(q, 0, fb);
     q = draw_finish(q);
 
-    dma_wait_fast();
+    //dma_wait_fast();
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
     dma_channel_send_normal_ucab(DMA_CHANNEL_GIF, ps2ref.flip_fb_packet.data,
                                  (q - ps2ref.flip_fb_packet.data), 0);
     draw_wait_finish();
@@ -1446,7 +1445,8 @@ void PS2_TexImageVRamUpload(ps2_teximage_t * teximage)
     q = draw_texture_flush(q);
 
     dma_channel_send_chain(DMA_CHANNEL_GIF, packet->data, (q - packet->data), 0, 0);
-    dma_wait_fast();
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
+    //dma_wait_fast();
 
     ps2ref.current_tex = teximage;
     ps2_tex_uploads++;
