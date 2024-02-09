@@ -55,22 +55,27 @@ void VU1_UploadProg(void * vu1_code_start, void * vu1_code_end)
 	packet2_free(packet2);
 }
 
-#define MAX_PACKET_SIZE_QW 1024 * 1000
+// VU1 mem is 16k, so use that as a guide
+// 16k is 1024 qwords
+#define MAX_PACKET_SIZE_QW 1024
 
 void VU1_Begin(void)
 {
     if (buildingPacket){
+        // shouldn't happen. Means we skipped an end.
+        printf("*** VU1_Begin without an end\n");
         packet2_free(buildingPacket);
         buildingPacket = NULL;
     }
     buildingPacket = packet2_create(MAX_PACKET_SIZE_QW, P2_TYPE_NORMAL, P2_MODE_CHAIN, 1);
 }
 
-void VU1_End(int start)
+void VU1_End(int startProg)
 {
-    if (start >= 0)
+    if (startProg >= 0)
     {
-        packet2_utils_vu_add_start_program(buildingPacket, start);
+        // adds a flush and mscal(startProg)
+        packet2_utils_vu_add_start_program(buildingPacket, startProg);
     }
     packet2_utils_vu_add_end_tag(buildingPacket);
 
@@ -86,13 +91,15 @@ void VU1_End(int start)
     dma_channel_send_packet2(sendingPacket, DMA_CHANNEL_VIF1, 1);
 }
 
-void VU1_ListAddBegin(int address)
+void VU1_ListAddBegin(int address_qw)
 {
-    packet2_utils_vu_open_unpack(buildingPacket, address, 0);
+    // Adds CNT, STCYCL (wl=0, cl=0x101), UNPACK V4_32 dest_adderss = address, no tops, signed, no IRQ
+    packet2_utils_vu_open_unpack(buildingPacket, address_qw, 0);
 }
 
 void VU1_ListAddEnd(void)
 {
+    // pad to qw boundary, fixup length of CNT, fixup num in UNPACK
     packet2_utils_vu_close_unpack(buildingPacket);
 }
 

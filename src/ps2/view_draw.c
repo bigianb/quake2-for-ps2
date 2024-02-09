@@ -622,16 +622,13 @@ typedef struct
     int      vert_count;
 } vu_batch_data_t PS2_ALIGN(16);
 
-static inline int CountVertexLoops(int vertex_qwords, int num_regs)
-{
-    const int loops_per_qw = 2 / num_regs;
-    return vertex_qwords * loops_per_qw;
-}
-
+// VU1 has 16k mem, 1024 quad words
+// Each vertex takes 2 quad words, so each tri takes 6.
+// 
 enum
 {
-// largest value attempted so far
-    MAX_TRIS_PER_VU_BATCH = 20,
+    // we only have one unpack per batch. max size there is 256 including DMAs
+    MAX_TRIS_PER_VU_BATCH = 30,     // 180 qw
     MAX_VERTS_PER_VU_BATCH = MAX_TRIS_PER_VU_BATCH * 3
 };
 
@@ -700,8 +697,7 @@ static void PS2_FlushVUBatch(void)
     ps2_current_batch_data->vert_count = ps2_vu_batch_vert_count;
 
     // Finish the GIF tag now that we know the vertex count.
-    const int vertex_qws = ps2_vu_batch_vert_count * 2; // 2 qwords per vertex (color + position)
-    const int vert_loops = CountVertexLoops(vertex_qws, NUM_VERTEX_ELEMENTS);
+    const int vert_loops = ps2_vu_batch_vert_count;
     const u64 prim_desc  = GS_PRIM(GS_PRIM_TRIANGLE, GS_PRIM_SFLAT, GS_PRIM_TOFF, GS_PRIM_FOFF, GS_PRIM_ABOFF, GS_PRIM_AAON, GS_PRIM_FSTQ, GS_PRIM_C1, 0);
 
     // Update it:
@@ -711,11 +707,16 @@ static void PS2_FlushVUBatch(void)
     // Close the draw list:
     VU1_ListAddEnd();
 
+    PS2_WaitGSDrawFinish();
+
     // Send the batch and start the VU program (located in micromem address 0):
     VU1_End(0);
 
     //FIXME PROBABLY actually synchronize before VU1_End() call...
     PS2_WaitGSDrawFinish();
+
+    ps2_vu_batch_vert_count = 0;
+    ps2_current_batch_data = NULL;
 }
 
 /*
