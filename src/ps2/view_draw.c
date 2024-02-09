@@ -980,12 +980,6 @@ void PS2_DrawFrameSetup(const refdef_t * view_def)
     Mat4_Copy(&ps2_mvp_matrix, &ps2_view_proj_matrix);
     Mat4_Identity(&ps2_model_to_world_matrix);
 
-    //TEMP makes the word rotate around the camera
-    //static float rotation_angle = 0.0f;
-    //Mat4_MakeRotationZ(&ps2_model_to_world_matrix, rotation_angle);
-    //Mat4_Multiply(&ps2_mvp_matrix, &ps2_model_to_world_matrix, &ps2_view_proj_matrix);
-    //rotation_angle += 0.01f;
-
     // Update the frustum planes:
     PS2_SetUpFrustum(view_def);
 

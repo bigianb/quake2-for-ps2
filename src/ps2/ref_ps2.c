@@ -400,7 +400,7 @@ static void PS2_InitGSBuffers(int vidMode, int fbPsm, int zPsm, qboolean interla
 
 static void PS2_InitDrawingEnvironment(void)
 {
-    packet2_t *packet2 = packet2_create(20, P2_TYPE_NORMAL, P2_MODE_NORMAL, 0);
+    packet2_t *packet2 = packet2_create(24, P2_TYPE_NORMAL, P2_MODE_NORMAL, 0);
 
 	// This will setup a default drawing environment.
 	packet2_update(packet2, draw_setup_environment(packet2->next, 0, &ps2ref.frame_buffers[0], &ps2ref.z_buffer));
@@ -1007,8 +1007,8 @@ qboolean PS2_RendererInit(void * unused1, void * unused2)
     r_ps2_skip_render_frame  = Cvar_Get("r_ps2_skip_render_frame", "0",   0);
 
     // Cache these, since on the PS2 we don't have a way of interacting with the console.
-    viddef.width             = (int)r_ps2_vid_width->value;
-    viddef.height            = (int)r_ps2_vid_height->value;
+    viddef.width             = 640;  // (int)r_ps2_vid_width->value;
+    viddef.height            = 480;  // (int)r_ps2_vid_height->value;
     ps2ref.ui_brightness     = (u32)r_ps2_ui_brightness->value;
     ps2ref.fade_scr_alpha    = (u32)r_ps2_fade_scr_alpha->value;
     ps2ref.show_fps_count    = (qboolean)r_ps2_show_fps->value;
@@ -1024,7 +1024,8 @@ qboolean PS2_RendererInit(void * unused1, void * unused2)
 
     // Main renderer and video initialization:
     PS2_AllocRenderPackets();
-    PS2_InitGSBuffers(GRAPH_MODE_AUTO, GS_PSM_32, GS_PSMZ_32, true);
+    // 640 x 480 progressive
+    PS2_InitGSBuffers(GRAPH_MODE_VGA_640_60, GS_PSM_32, GS_PSMZ_32, false);
     PS2_InitDrawingEnvironment();
 
     // Reset these, to be sure...
