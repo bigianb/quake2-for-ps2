@@ -224,7 +224,7 @@ ifndef VERBOSE
   ECHO_LINKING  = @echo $(COLOR_ALT1)"-> Linking ..."$(COLOR_DEFAULT)
   ECHO_CLEANING = @echo $(COLOR_ALT1)"-> Cleaning ..."$(COLOR_DEFAULT)
   ECHO_BUILDING_IOP_MODS   = @echo $(COLOR_ALT1)"-> Assembling IOP module '$(notdir $*).irx' ..."$(COLOR_DEFAULT)
-  ECHO_ASSEMBLING_VU_PROGS = @echo $(COLOR_ALT1)"-> Assembling VU microprogram '$(notdir $*).vcl' ..."$(COLOR_DEFAULT)
+  ECHO_ASSEMBLING_VU_PROGS = @echo $(COLOR_ALT1)"-> Assembling VU microprogram '$(notdir $*).vsm' ..."$(COLOR_DEFAULT)
 endif # VERBOSE
 
 # ---------------------------------------------------------

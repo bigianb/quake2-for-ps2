@@ -653,6 +653,7 @@ Remarks: Local function.
 */
 static void PS2_BeginNewVUBatch(void)
 {
+    printf("PS2_BeginNewVUBatch\n");
     VU1_Begin();
 
     ++ps2_num_vu_batches;
@@ -693,6 +694,7 @@ Remarks: Local function.
 */
 static void PS2_FlushVUBatch(void)
 {
+    printf("PS2_FlushVUBatch\n");
     // Now we can set the vertex count.
     ps2_current_batch_data->vert_count = ps2_vu_batch_vert_count;
 
@@ -713,8 +715,9 @@ static void PS2_FlushVUBatch(void)
     VU1_End(0);
 
     //FIXME PROBABLY actually synchronize before VU1_End() call...
+    printf("wait for GS Draw finish\n");
     PS2_WaitGSDrawFinish();
-
+    printf(" ...done\n");
     ps2_vu_batch_vert_count = 0;
     ps2_current_batch_data = NULL;
 }
@@ -771,6 +774,8 @@ Remarks: Local function.
 */
 static void PS2_DrawTextureChains(void)
 {
+    printf("PS2_DrawTextureChains\n");
+    SetVUProg();
     PS2_BeginNewVUBatch();
 
     int i;

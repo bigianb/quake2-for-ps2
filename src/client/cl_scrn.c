@@ -1369,6 +1369,7 @@ void SCR_UpdateScreen(void)
                 cl.cinematicpalette_active = false;
             }
 
+            printf("    draw 3d\n");
             // do 3D refresh drawing, and then update the screen
             SCR_CalcVrect();
 
@@ -1407,4 +1408,5 @@ void SCR_UpdateScreen(void)
         }
     }
     re.EndFrame();
+    printf("    ... done\n");
 }

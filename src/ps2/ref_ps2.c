@@ -1360,16 +1360,11 @@ PS2_RenderFrame
 */
 void PS2_RenderFrame(refdef_t * view_def)
 {
+    printf("PS2_RenderFrame\n");
     CHECK_FRAME_STARTED();
     if (view_def == NULL)
     {
         Sys_Error("PS2_RenderFrame: Null view def!");
-    }
-
-    // You can skip 3D frame rendering for profiling/testing.
-    if (r_ps2_skip_render_frame->value)
-    {
-        return;
     }
 
     // A world map should have been loaded already by BeginRegistration().

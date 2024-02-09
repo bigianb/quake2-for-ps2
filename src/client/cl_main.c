@@ -1734,8 +1734,6 @@ void CL_Frame(int msec)
     static int extratime = 0;
     static int lasttimecalled;
 
-    printf("CL_Frame(%d)\n", msec);
-
     if (dedicated->value)
     {
         return;
