@@ -6,31 +6,16 @@
 This is an unofficial fan made port, targeting the PS2 Console, of the original
 [Quake II source code released by id Software][link_id_repo].
 
-This port relies on the free [PS2DEV SDK][link_ps2_dev] to provide rendering,
-input, audio and system services for the Quake Engine.
+This repository is a fork of Guilherme Lampert's original which he stopped working on several years ago.
+The main changes are to bring it up to date with the current ps2dev and to fill in some of the missing gaps.
 
-The project is in early development stage, but 2D rendering of menus and cinematics
-is implemented and working on both the PCSX2 Emulator and the PS2.
-
-As shown in the screenshot above, we also have some basic
-hardware-accelerated raw level geometry rendering implemented.
-
-The long term goal would be to have a fully functional and playable (single-player)
-Quake II on the PlayStation 2, using only on the freely available tools and libraries.
-
-Some of the main features still missing are:
-
-- Finish Vector Unit-accelerated rendering
-- Add texture mapping, lightmaps and dynamic lights
-- Add sound rendering/mixing for the PS2
-- Add gamepad input
-- Hook `dlmalloc`
-- Optimize memory allocation/usage as much as possible
-- Optimize rendering to ensure smooth 30fps gameplay
+It's really just for tech asmusement - there is a lot of stuff missing.
 
 ## Dev environment
 
-I use the ps2dev docker on M1 macbook. This is the amd64 image running under rosetta. I always forget the command to start the container ... use the following (assuming source code is in /Users/ian/dev ... change as you see fit)
+I use the ps2dev docker on M1 macbook. This is the amd64 image running under rosetta.
+Given that I always forget how to use docket, the notes below act as a crib sheet.
+If you want to use the same, change the /Users/ian/dev reference to point to where you have the source code.
 
 ```
 docker run --volume=/Users/ian/dev:/home/src --workdir=/home/src -t -d ps2dev/ps2dev:latest
@@ -42,8 +27,14 @@ apk update
 apk add make mpc mpfr gmp mpc1 mpfr4 cdrkit
 ```
 
+## Game files
+
 You will need to copy the baseq2 directory from a real Q2 game or the demo into the fs directory.
+
+## Building
+
 Running make in the root directory should generate an ISO file in the build directory.
+You can run that ISO in an emulator. I've not tried on a real PS2 yet.
 
 ## License
 
