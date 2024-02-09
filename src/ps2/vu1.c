@@ -71,7 +71,6 @@ void VU1_End(int start)
     if (start >= 0)
     {
         packet2_utils_vu_add_start_program(buildingPacket, start);
-	    packet2_utils_vu_add_end_tag(buildingPacket);
     }
     packet2_utils_vu_add_end_tag(buildingPacket);
 

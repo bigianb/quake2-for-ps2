@@ -599,9 +599,10 @@ extern u32 VU1Prog_Color_Triangles_CodeEnd   VU_DATA_SECTION;
 static qboolean vu_prog_set = false;
 void SetVUProg(void)
 {
-    if (vu_prog_set) { return; }
-    VU1_UploadProg(&VU1Prog_Color_Triangles_CodeStart, &VU1Prog_Color_Triangles_CodeEnd);
-    vu_prog_set = true;
+    if (!vu_prog_set) {
+        VU1_UploadProg(&VU1Prog_Color_Triangles_CodeStart, &VU1Prog_Color_Triangles_CodeEnd);
+        vu_prog_set = true;
+    }
 }
 
 // GS vertex format for our triangles (reglist):
@@ -621,16 +622,16 @@ typedef struct
     int      vert_count;
 } vu_batch_data_t PS2_ALIGN(16);
 
-static inline int CountVertexLoops(float vertex_qwords, float num_regs)
+static inline int CountVertexLoops(int vertex_qwords, int num_regs)
 {
-    const float loops_per_qw = 2.0f / num_regs;
-    return (int)(vertex_qwords * loops_per_qw);
+    const int loops_per_qw = 2 / num_regs;
+    return vertex_qwords * loops_per_qw;
 }
 
 enum
 {
 // largest value attempted so far
-    MAX_TRIS_PER_VU_BATCH = 40,
+    MAX_TRIS_PER_VU_BATCH = 20,
     MAX_VERTS_PER_VU_BATCH = MAX_TRIS_PER_VU_BATCH * 3
 };
 
@@ -704,8 +705,8 @@ static void PS2_FlushVUBatch(void)
     const u64 prim_desc  = GS_PRIM(GS_PRIM_TRIANGLE, GS_PRIM_SFLAT, GS_PRIM_TOFF, GS_PRIM_FOFF, GS_PRIM_ABOFF, GS_PRIM_AAON, GS_PRIM_FSTQ, GS_PRIM_C1, 0);
 
     // Update it:
-    *ps2_current_giftag++ = GS_GIFTAG(vert_loops, 1, 1, prim_desc, GS_GIFTAG_PACKED, NUM_VERTEX_ELEMENTS);
-    *ps2_current_giftag++ = VERTEX_FORMAT;
+    ps2_current_giftag[0] = GS_GIFTAG(vert_loops, 1, 1, prim_desc, GS_GIFTAG_PACKED, NUM_VERTEX_ELEMENTS);
+    ps2_current_giftag[1] = VERTEX_FORMAT;
 
     // Close the draw list:
     VU1_ListAddEnd();
@@ -731,14 +732,6 @@ static void PS2_VUBatchAddSurfaceTris(const ps2_mdl_surface_t * surf)
     const int num_triangles = poly->num_verts - 2;
     const byte * color = Dbg_GetDebugColor(surf->debug_color);
 
-    ps2_vu_batch_vert_count += num_triangles * 3;
-
-    //TEMP shouldn't need once we stabilize...
-    //if (ps2_vu_batch_vert_count > MAX_VERTS_PER_VU_BATCH)
-    //{
-        //Sys_Error("MAX_VERTS_PER_VU_BATCH overflow!");
-    //}
-
     int t, v;
     for (t = 0; t < num_triangles; ++t)
     {
@@ -762,6 +755,8 @@ static void PS2_VUBatchAddSurfaceTris(const ps2_mdl_surface_t * surf)
             VU1_ListAddFloat(vert->position[1]); // Y
             VU1_ListAddFloat(vert->position[2]); // Z
             VU1_ListAddFloat(1.0f);              // W
+
+            ++ps2_vu_batch_vert_count;
         }
     }
 }
@@ -987,10 +982,6 @@ void PS2_DrawFrameSetup(const refdef_t * view_def)
 
     // Update the frustum planes:
     PS2_SetUpFrustum(view_def);
-
-    ///////////////////////////////
-    //TEST
-    SetVUProg();
 
     ps2_num_vu_batches = 0;
     ps2_vu_batch_vert_count = 0;
