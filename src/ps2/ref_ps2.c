@@ -1024,8 +1024,8 @@ qboolean PS2_RendererInit(void * unused1, void * unused2)
 
     // Main renderer and video initialization:
     PS2_AllocRenderPackets();
-    // 640 x 480 progressive
-    PS2_InitGSBuffers(GRAPH_MODE_VGA_640_60, GS_PSM_32, GS_PSMZ_32, false);
+    // 640 x 480 progressive GRAPH_MODE_HDTV_480P, GRAPH_MODE_VGA_640_60
+    PS2_InitGSBuffers(GRAPH_MODE_HDTV_480P, GS_PSM_32, GS_PSMZ_32, false);
     PS2_InitDrawingEnvironment();
 
     // Reset these, to be sure...
