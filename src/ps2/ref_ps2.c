@@ -424,13 +424,13 @@ static void PS2_InitDrawingEnvironment(void)
 	// Now send the packet, no need to wait since it's the first.
 	dma_channel_send_packet2(packet2, DMA_CHANNEL_GIF, 1);
     dma_channel_wait(DMA_CHANNEL_GIF, 0);
-	//dma_wait_fast();
-
+    draw_wait_finish();
 	packet2_free(packet2);
 }
 
 static void PS2_ClearScreen(void)
 {
+    printf("** PS2_ClearScreen\n");
     packet2_t *clear = packet2_create(35, P2_TYPE_NORMAL, P2_MODE_NORMAL, 0);
 
     const int width  = viddef.width;
@@ -446,10 +446,11 @@ static void PS2_ClearScreen(void)
 	packet2_update(clear, draw_finish(clear->next));
 
 	// Now send our current dma chain.
-	//dma_wait_fast();
     dma_channel_wait(DMA_CHANNEL_GIF, 0);
 	dma_channel_send_packet2(clear, DMA_CHANNEL_GIF, 1);
 
+
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
 	packet2_free(clear);
 
 	// Wait for scene to finish drawing
@@ -507,17 +508,18 @@ static void PS2_FlushPipeline(void)
     ps2ref.current_frame_qwptr = draw_finish(ps2ref.current_frame_qwptr);
     END_DMA_TAG_AND_CHAIN(ps2ref.current_frame_qwptr);
 
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
     dma_channel_send_chain(DMA_CHANNEL_GIF, ps2ref.current_frame_packet->data,
                            (ps2ref.current_frame_qwptr - ps2ref.current_frame_packet->data),
                            0, 0);
+
+    // Synchronize.
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
 
     // Reset packet data pointers:
     ps2ref.current_frame_packet = &ps2ref.frame_packets[ps2ref.frame_index];
     ps2ref.current_frame_qwptr  = ps2ref.current_frame_packet->data;
 
-    // Synchronize.
-    //dma_wait_fast();
-    dma_channel_wait(DMA_CHANNEL_GIF, 0);
     ps2_pipe_flushes++;
 }
 
@@ -800,6 +802,10 @@ Remarks: Local function.
 */
 static void PS2_DrawFullScreenCinematic(void)
 {
+    if (!ps2_cinematic_frame.draw_pending){
+        return;
+    }
+    
     texrect_t texrect;
 
     // Cinematic are not filling the screen properly on my tests...
@@ -1131,9 +1137,9 @@ void PS2_WaitGSDrawFinish(void)
     qword_t * qwptr = scrap_dma_buffer;
     qwptr = draw_finish(qwptr);
 
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
     dma_channel_send_normal(DMA_CHANNEL_GIF, scrap_dma_buffer, (qwptr - scrap_dma_buffer), 0, 0);
     dma_channel_wait(DMA_CHANNEL_GIF, 0);
-    //dma_wait_fast(); // -- Synchronize immediately.
 
     draw_wait_finish();
 }
@@ -1321,14 +1327,13 @@ void PS2_EndFrame(void)
     END_DMA_TAG_AND_CHAIN(ps2ref.current_frame_qwptr);
 
     dma_channel_wait(DMA_CHANNEL_GIF, 0);
-    //dma_wait_fast();
     dma_channel_send_chain(DMA_CHANNEL_GIF, ps2ref.current_frame_packet->data,
                            (ps2ref.current_frame_qwptr - ps2ref.current_frame_packet->data),
                            0, 0);
-
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
+    draw_wait_finish();
     // V-Sync wait:
     graph_wait_vsync();
-    //draw_wait_finish();   // causes Play to hang
 
     graph_set_framebuffer_filtered(ps2ref.frame_buffers[ps2ref.frame_index].address,
                                    ps2ref.frame_buffers[ps2ref.frame_index].width,
@@ -1346,10 +1351,10 @@ void PS2_EndFrame(void)
     q = draw_framebuffer(q, 0, fb);
     q = draw_finish(q);
 
-    //dma_wait_fast();
     dma_channel_wait(DMA_CHANNEL_GIF, 0);
     dma_channel_send_normal_ucab(DMA_CHANNEL_GIF, ps2ref.flip_fb_packet.data,
                                  (q - ps2ref.flip_fb_packet.data), 0);
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
     draw_wait_finish();
     ps2ref.frame_started = false;
 }
@@ -1440,9 +1445,9 @@ void PS2_TexImageVRamUpload(ps2_teximage_t * teximage)
                               teximage->texbuf.psm, teximage->texbuf.address, width);
     q = draw_texture_flush(q);
 
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
     dma_channel_send_chain(DMA_CHANNEL_GIF, packet->data, (q - packet->data), 0, 0);
     dma_channel_wait(DMA_CHANNEL_GIF, 0);
-    //dma_wait_fast();
 
     ps2ref.current_tex = teximage;
     ps2_tex_uploads++;

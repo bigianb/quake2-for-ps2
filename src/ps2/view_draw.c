@@ -706,6 +706,8 @@ static void PS2_FlushVUBatch(void)
     ps2_current_giftag[0] = GS_GIFTAG(vert_loops, 1, 1, prim_desc, GS_GIFTAG_PACKED, NUM_VERTEX_ELEMENTS);
     ps2_current_giftag[1] = VERTEX_FORMAT;
 
+    ps2_current_giftag = NULL;  // never need to use this again
+
     // Close the draw list:
     VU1_ListAddEnd();
 
