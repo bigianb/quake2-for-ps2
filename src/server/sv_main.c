@@ -745,7 +745,7 @@ SV_Frame
 */
 void SV_Frame(int msec)
 {
-    printf("SV_Frame(%d)\n", msec);
+    //printf("SV_Frame(%d)\n", msec);
 
     time_before_game = time_after_game = 0;
 

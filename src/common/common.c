@@ -1525,7 +1525,7 @@ void Qcommon_Frame(int msec)
     const char * s;
     int time_before = 0, time_between = 0, time_after = 0;
 
-    printf("Qcommon_Frame(%d)\n", msec);
+    //printf("Qcommon_Frame(%d)\n", msec);
 
     if (setjmp(abortframe))
     {

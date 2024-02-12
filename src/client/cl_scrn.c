@@ -1273,7 +1273,7 @@ void SCR_UpdateScreen(void)
     int numframes;
     float separation[2] = { 0, 0 };
 
-    printf("SCR_UpdateScreen\n");
+    //printf("SCR_UpdateScreen\n");
 
     // if the screen is disabled (loading plaque is up, or vid mode changing)
     // do nothing at all

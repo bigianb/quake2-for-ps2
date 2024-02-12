@@ -353,6 +353,8 @@ static void PS2_InitGSBuffers(int vidMode, int fbPsm, int zPsm, qboolean interla
                                                     ps2ref.frame_buffers[1].psm,
                                                     GRAPH_ALIGN_PAGE);
 
+    Com_DPrintf("FB1 = 0x%x\n", ps2ref.frame_buffers[1].address);
+
     // Z-buffer/depth-buffer (same size as the frame-buffers):
     ps2ref.z_buffer.enable  = DRAW_ENABLE;
     ps2ref.z_buffer.mask    = 0;
@@ -363,8 +365,10 @@ static void PS2_InitGSBuffers(int vidMode, int fbPsm, int zPsm, qboolean interla
                                             ps2ref.z_buffer.zsm,
                                             GRAPH_ALIGN_PAGE);
 
+    Com_DPrintf("Z = 0x%x\n", ps2ref.z_buffer.address);
+
     // User textures start after the z-buffer.
-    // Allocate space for a single 256x256 large texture
+    // Allocate space for a single 256x256 large texture. Could be 8 bit palletised.
     // (pretty much all the space we have left):
     ps2ref.vram_texture_start = PS2_VRamAlloc(MAX_TEXIMAGE_SIZE,
                                               MAX_TEXIMAGE_SIZE,
@@ -1013,7 +1017,7 @@ qboolean PS2_RendererInit(void * unused1, void * unused2)
     r_ps2_skip_render_frame  = Cvar_Get("r_ps2_skip_render_frame", "0",   0);
 
     // Cache these, since on the PS2 we don't have a way of interacting with the console.
-    viddef.width             = 640;  // (int)r_ps2_vid_width->value;
+    viddef.width             = 640;  // Should be 720 but that causes issues. (int)r_ps2_vid_width->value;
     viddef.height            = 480;  // (int)r_ps2_vid_height->value;
     ps2ref.ui_brightness     = (u32)r_ps2_ui_brightness->value;
     ps2ref.fade_scr_alpha    = (u32)r_ps2_fade_scr_alpha->value;
@@ -1031,7 +1035,7 @@ qboolean PS2_RendererInit(void * unused1, void * unused2)
     // Main renderer and video initialization:
     PS2_AllocRenderPackets();
     // 640 x 480 progressive GRAPH_MODE_HDTV_480P, GRAPH_MODE_VGA_640_60
-    PS2_InitGSBuffers(GRAPH_MODE_HDTV_480P, GS_PSM_32, GS_PSMZ_32, false);
+    PS2_InitGSBuffers(GRAPH_MODE_HDTV_480P, GS_PSM_32, GS_PSMZ_16, false);
     PS2_InitDrawingEnvironment();
 
     // Reset these, to be sure...
@@ -1366,7 +1370,7 @@ PS2_RenderFrame
 */
 void PS2_RenderFrame(refdef_t * view_def)
 {
-    printf("PS2_RenderFrame\n");
+    //printf("PS2_RenderFrame\n");
     CHECK_FRAME_STARTED();
     if (view_def == NULL)
     {

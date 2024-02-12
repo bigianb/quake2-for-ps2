@@ -1005,7 +1005,7 @@ CL_ReadPackets
 */
 void CL_ReadPackets(void)
 {
-    printf("CL_ReadPackets\n");
+    //printf("CL_ReadPackets\n");
     while (NET_GetPacket(NS_CLIENT, &net_from, &net_message))
     {
         Com_DPrintf ("packet\n");

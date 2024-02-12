@@ -64,7 +64,7 @@ void VU1_Begin(void)
 {
     if (buildingPacket){
         // shouldn't happen. Means we skipped an end.
-        printf("*** VU1_Begin without an end\n");
+        //printf("*** VU1_Begin without an end\n");
         packet2_free(buildingPacket);
         buildingPacket = NULL;
     }
@@ -73,7 +73,7 @@ void VU1_Begin(void)
 
 void VU1_End(int startProg)
 {
-    printf("VU1_End(%d)\n", startProg);
+    //printf("VU1_End(%d)\n", startProg);
     if (startProg >= 0)
     {
         // adds a flush and mscal(startProg)
@@ -82,9 +82,9 @@ void VU1_End(int startProg)
     packet2_utils_vu_add_end_tag(buildingPacket);
 
     // Wait for previous transfer to complete if not yet:
-    printf("    waiting on VIF1\n");
+    //printf("    waiting on VIF1\n");
     dma_channel_wait(DMA_CHANNEL_VIF1, 0);
-    printf("    done\n");
+    //printf("    done\n");
 
     if (sendingPacket){
         packet2_free(sendingPacket);
@@ -92,9 +92,9 @@ void VU1_End(int startProg)
     }
     sendingPacket = buildingPacket;
     buildingPacket = NULL;
-    printf("    sending VIF packet\n");
+    //printf("    sending VIF packet\n");
     dma_channel_send_packet2(sendingPacket, DMA_CHANNEL_VIF1, 1);
-    printf("    sent\n");
+    //printf("    sent\n");
 }
 
 void VU1_ListAddBegin(int address_qw)

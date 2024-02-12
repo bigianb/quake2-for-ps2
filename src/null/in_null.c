@@ -41,7 +41,7 @@ void IN_Commands(void)
 
 void IN_Frame(void)
 {
-    printf("IN_Frame\n");
+    //printf("IN_Frame\n");
 }
 
 void IN_Move(usercmd_t * cmd)
