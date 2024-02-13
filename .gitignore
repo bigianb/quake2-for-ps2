@@ -6,3 +6,5 @@ build/irx/usbd.s
 baseq2
 *.iso
 build/irx/usbd.c
+*.map
+*.d
